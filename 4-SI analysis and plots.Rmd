@@ -1,0 +1,906 @@
+---
+title: "Transplantation study: supplementary analysis and plots"
+author: "Giulia"
+date: "2/2/2022"
+output: html_document
+---
+
+#Load packages
+```{r}
+#R version in use: version.string R version 3.6.1 (2019-07-05)
+
+#load pachages
+library(ampvis2) #version 2.5.1
+library(tidyverse) #version 1.2.1
+library(ggplot2) #version now 3.3.5
+```
+
+#Fig.S1 - pictures of transplantation
+
+#Fig.S2-Overview of samples collected for microbial community analysis.
+```{r}
+# Prepare metadata
+
+## subset needed column
+d_meta <- d_long_filt %>% 
+          select(Plants, SampleType, Date, Days, Transplantation, SampleGroup) %>% 
+          unique()
+
+## add a simple grouping for the plot
+d_meta$SampleGroup2[d_meta$SampleType %in% "IWW"] <- "IWW"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(before)" | d_meta$SampleGroup %in% "R-AS(before)"] <- "AS(before)"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-early)" | d_meta$SampleGroup %in% "R-AS(after-early)"] <- "AS(after-early)"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-intermediate)" | d_meta$SampleGroup %in% "R-AS(after-intermediate)"] <- "AS(after-intermediate)"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-late)" | d_meta$SampleGroup %in% "R-AS(after-late)"] <- "AS(after-late)"
+
+## sort grouping
+d_meta$SampleGroup2 <- factor(d_meta$SampleGroup2, levels = c("IWW",
+                                                          "AS(before)",
+                                                          "AS(after-early)",
+                                                          "AS(after-intermediate)",
+                                                          "AS(after-late)"))
+
+# Plot
+library(ggrepel)
+
+p_meta <- ggplot(d_meta, aes(x = Days, y=SampleType, color = SampleGroup2)) +
+                geom_point() +
+                geom_vline(xintercept = 0, linetype = "dashed") +
+                geom_text(data = subset(d_meta, !Days %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8)), aes(label = Days), hjust = -0.5,  vjust = 0.2, angle = 90, size = 3, show.legend = FALSE) +
+               geom_text_repel(data= subset(d_meta, Days %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8)), 
+                            aes(label = Days,
+                                segment.square = F,
+                                segment.inflect = F),
+                               show.legend = FALSE,
+                                angle = 90, size = 3,
+                                vjust = -0.5, 
+                                direction         = "x",
+                                segment.size      = 0.5,
+                                min.segment.length = 0
+                              )  +
+ 
+                facet_wrap(~Plants, ncol = 1, nrow = 2) +
+                ylab("Sample type") +
+                theme_bw() +
+                theme(legend.position = "right",
+                      strip.text = element_text(face = "bold", size = 13),
+                      axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5)) +
+                scale_x_continuous(breaks=seq(-140,200,10)) +
+                scale_color_manual(values = c("IWW" = "darkgrey",
+                                                "AS(before)" = "black",
+                                                "AS(after-early)" = "blue",
+                                              "AS(after-intermediate)" = "darkgreen",
+                                              "AS(after-late)" = "red"),
+                                   name = "Sample Group") 
+                
+
+ggsave(plot = p_meta, filename = "Figures/Fig.S2-Samples overview.jpeg", width = 10, height = 4)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.S3-Distance plots to D-AS(before) model.
+(from statistial analysis, file "2-full analysis - 0.01 pct -v10-SVK-gd.Rmd")
+
+#Fig.S4-Distance plots to R-AS(before) model.
+(from statistial analysis, file "2-full analysis - 0.01 pct -v10-SVK-gd.Rmd")
+
+#Fig.S5-Abundance variation over time before transplantation of selected genera.
+
+###Import filtered dataset
+```{r}
+#import ampvis format
+d_amp_filt <- readRDS('data_generated/d_amp_filt.rds')
+```
+
+###Subset 
+```{r}
+#Subset AS samples only
+subset <- amp_subset_samples(d_amp_filt, SampleType %in% "Activated Sludge" & Transplantation %in% "Before", normalise = F) 
+
+subset$metadata$Date <- as.factor(as.Date(subset$metadata$Date))
+```
+
+###Prepare dataset
+```{r}
+#create list of top 5 genus with abundances
+p<-  amp_heatmap(subset,
+            group_by = c("Days","Plants"),
+            tax_aggregate = "Genus",
+            tax_show = 5,
+            normalise = F,
+            color_vector = c("white", "red"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 8) 
+
+
+p_ab <- p$data
+
+#check the top5 most abunda genera. They are the same in R-AS and D-AS
+p_ab %>% 
+  group_by(Plants, Display) %>% 
+  summarise(mean_ab = mean(Abundance)) %>% 
+   arrange(Plants, desc(mean_ab))
+
+#export genera vector as ordered by abundance in donor
+toptaxa <- p_ab %>% 
+  group_by(Plants, Display) %>% 
+  summarise(mean_ab = mean(Abundance)) %>% 
+  arrange(Plants, desc(mean_ab)) %>% 
+  subset(Plants %in% "Donor") %>% 
+  pull(Display) %>% 
+  as.character()
+
+
+#create data frame with days, plant and top 15 genus with abundances
+pp<- data.table::dcast(p$data, Group~Display,value.var = "Abundance",fun.aggregate = mean)
+
+#transpose data frame
+ppmb1 <- gather(pp, key=Taxa, value = Abundance,-Group)
+
+#split days and plants column
+ppmb2 <- ppmb1 %>% 
+  separate(Group, c("Days", "Plant"), sep = " ")
+
+ppmb2$Days = as.numeric(as.character(ppmb2$Days))
+
+#order taxa
+ppmb2$Taxa <- factor(ppmb2$Taxa, levels = toptaxa)
+```
+
+###Plot
+```{r}
+#plot figure top row
+p_gen <- ggplot(ppmb2, aes(x = Days, y = Abundance, color=Plant))+ 
+              geom_point(size=3) +
+              geom_line(size=1) +
+                 theme(legend.position = "bottom",
+            panel.background = element_blank(),
+            axis.line.x = element_line(color = "black"),
+            axis.line.y = element_line(color = "black"),
+            legend.text = element_text(size = 24, color = "black"),
+            legend.title = element_blank(),
+            axis.text.y = element_text(size = 15, color = "black"),
+            axis.text.x = element_text(size = 15, hjust = 0.5, vjust = 0.5, color = "black", angle = 90),
+            axis.title.x = element_text(size = 20, color = "black"),
+            axis.title.y = element_text(size = 20, color = "black"),
+            strip.text = element_text(size = 24, color = "black", face = "bold"),
+            plot.title = element_text(size = 28, color = "black"),
+            plot.subtitle = element_text(size = 26, color = "black"),
+            ) +
+         
+  facet_wrap(~ as.factor(Taxa), scales = "free_y", ncol = 5)+
+  xlab("Days") + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1)+
+  ylab("Relative read abundance [%]") +
+  scale_x_continuous(breaks=seq(-140,220,20)) +
+  scale_color_discrete(labels = c("D-AS", "R-AS")) 
+
+ggsave(plot = p_gen, "Figures/Fig.S5 - Top 5 genera before transplantation.jpeg", height = 5, width = 20)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.S6-Sludge retention time of recipient plant.
+
+###Import raw metadata
+
+```{r Metadata Sludge}
+### Sludge ###
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Slamrapport_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") 
+
+names(Data)[names(Data) == "Date"] <- "StartTime"
+
+Sludge <-  reshape2::melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value") #3 gives the starting column number for column names to store as measure variables. This differs depending on the original dataformat.
+Sludge$Origin <- "Process"
+
+Sludge$Value <- as.numeric(Sludge$Value)
+
+Sludge$Days <- lubridate::as_date(Sludge$StartTime, "%Y-%B-%d") - lubridate::as_date("2017-04-20", "%Y-%B-%d") #calculate Days of transplantation considering 2017-0420 = Day0
+
+Sludge$StartTime <- strptime(Sludge$StartTime, format = c("%Y-%m-%d"))
+#The POSIXlt format differs between original dataformats...
+
+Sludge_Days <- Sludge
+Sludge_Days$StartTime <- trunc(Sludge$StartTime, "days") %>%
+as.character() %>%
+as.factor()
+
+Sludge_Days <- aggregate(Value~StartTime+Parameter+Origin+Days, data = Sludge_Days, FUN = "mean")
+
+Sludge_Days$StartTime <- strptime(Sludge_Days$StartTime, format = c("%Y-%m-%d"))
+```
+
+###Sludge age calculation
+```{r}
+#Sludge Age
+WAS_MASS <- subset(Sludge, Parameter %in% "WAS_Mass")
+Total_Biomass <- subset(Sludge, Parameter %in% "LT2_TS")
+Total_Biomass <- select(Total_Biomass, -Origin)
+Total_Biomass$Parameter <- "Total Sludge Age"
+SludgeAge <- Total_Biomass
+SludgeAge$Value <- (Total_Biomass$Value*2*1750)/WAS_MASS$Value
+SludgeAge <- subset(SludgeAge, Value < 50)
+```
+
+###Plot
+
+```{r}
+###Timeseries
+p_timeseries <- ggplot(SludgeAge, aes(x = Days, y = as.numeric(Value))) +
+   geom_point(size = 1.8, alpha = 0.5) +
+    geom_line(size = 1.0, alpha = 0.2) +
+    theme(legend.position = "none",
+           panel.background = element_blank(),
+           legend.key = element_rect(fill="transparent"),
+           legend.text = element_text(size = 12, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 11, color = "black"), 
+           axis.text.x = element_text(size = 11, color = "black", hjust = 0.5, vjust = 0.5, angle = 90), 
+           axis.title.x  = element_text(size = 12, color = "black"),
+           axis.title.y  = element_text(size = 12, color = "black"),
+           
+           panel.grid.major = element_line(size = 0.2, linetype = 'solid', colour = "gray"),
+           panel.grid.minor = element_blank(),
+           strip.background = element_blank(),
+           panel.border = element_rect(colour = "black", fill = NA),
+           strip.text = element_text(size = 15, face = "bold", color = "black", hjust = 0)
+           ) +
+   xlab("Days") +
+  ylab("Total Sludge Retention Time [d]") +
+   geom_smooth(size = 2, se = FALSE, span = 0.1, color = "red") +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 2) +
+  geom_vline(xintercept = -140, linetype = "longdash", color = "black", size = 1) +
+   geom_vline(xintercept = 203, linetype = "longdash", color = "black", size = 1) +
+   scale_x_continuous(breaks=seq(-500,200,50)) +
+   scale_y_continuous(breaks = c(0,5,10,15,20,25,30)) 
+
+
+###boxplot
+
+#add a column to identify the days before and after transplantation that correpond to the days which the community data is available for
+SludgeAge$Transplantation[SludgeAge$Days >= -140 & SludgeAge$Days <= 0] <- "Before"
+SludgeAge$Transplantation[SludgeAge$Days > 0 & SludgeAge$Days <= 203] <- "After"
+
+SludgeAge_subset <- subset(SludgeAge, !is.na(Transplantation))
+
+SludgeAge_subset$Transplantation <- factor(SludgeAge_subset$Transplantation, levels = c("Before", "After"))
+
+p_boxplot <- ggplot(SludgeAge_subset, aes(x=Transplantation, y=Value)) + 
+  geom_boxplot() +
+   theme(legend.position = "none",
+           panel.background = element_blank(),
+           legend.key = element_rect(fill="transparent"),
+           legend.text = element_text(size = 12, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 11, color = "black"), 
+           axis.text.x = element_text(size = 11, color = "black", hjust = 0.5, vjust = 0.5, angle = 0), 
+           axis.title.x  = element_text(size = 12, color = "black"),
+           axis.title.y  = element_text(size = 12, color = "black"),
+          panel.grid.major = element_line(size = 0.2, linetype = 'solid', colour = "gray"),
+         strip.background = element_blank(),
+           panel.border = element_rect(colour = "black", fill = NA),
+           ) +
+   ylab("Total Sludge Retention Time [d]") +
+  scale_y_continuous(breaks = seq(0,30,5)) 
+
+###combine plots
+
+library(ggpubr)
+
+p_srt <- ggarrange(p_timeseries, NULL, p_boxplot,
+                     labels = c("A)", "", "B)"),
+                    font.label = list(size = 15, color = "black", face = "bold", family = NULL),
+                    ncol = 3,
+                    nrow = 1,
+                    widths = c(1, 0.05, 0.3)
+                ) 
+
+ggsave(plot = p_srt, "Figures/Fig.S6-SRT recipient.jpg", width = 10, height = 4)
+```
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.S7-Possible responses of microbial community to transplantation.
+Theory image made in Inkscape
+
+#Fig.S8-Removal of abundant species from recipient through transplantation.  
+
+###Import filtered dataset
+```{r}
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+###Import Venn-dataframe
+```{r}
+#import dataframe from Venn
+df_venn <- readxl::read_excel("data_generated/df_venn.xlsx")
+```
+
+###Subset
+```{r}
+#select unique in recipient
+ASR_before_unique <- subset(df_venn, VennGroup %in% "ASR_before_unique")
+
+#subset unique species of recipient from main dataset
+rec <- subset(d_long_filt, Plants %in% "Recipient" & SampleType %in% "AS" &
+                Species_rename %in% ASR_before_unique$Species_rename)
+
+#subset species before transplantation with mean abundance >= 0.1%
+rec3_ab <- rec %>% 
+  filter(Transplantation %in% "Before") %>% 
+  group_by(Species_rename) %>% 
+   summarise(rra_avg = mean(rra_sp)) %>% 
+  filter(rra_avg >= 0.1)
+
+unique(rec3_ab$Species_rename)
+
+#subset them from main dataset and in R-AS
+rec_sub <- subset(rec, Species_rename %in% rec3_ab$Species_rename)
+```
+
+##Top 5 species
+```{r}
+#sort by abundance in R-AS (1st day after transplantation) and extract top 5
+top5 <- subset(rec_sub, Days %in% "1") %>% 
+            select(Species_rename2, rra_sp) %>% 
+            arrange(desc(rra_sp)) %>% 
+            head(., 5) %>% 
+            pull(Species_rename2) %>% 
+            as.character()
+     
+#subset from full dataset with donor
+both_top5 <- subset(d_long_filt, SampleType %in% "AS" & Species_rename2 %in% top5)
+
+both_top5$Species_rename2 <- factor(both_top5$Species_rename2, levels = top5)
+```
+
+##Plot
+```{r}
+p_removed <- ggplot(both_top5, aes(x = Days, y = rra_sp, color=Plants, group = Plants)) + 
+                geom_point(size=3) +
+                geom_line(size=1)+
+              theme(legend.position = "bottom",
+                         panel.background = element_blank(),
+                         axis.line.x = element_line(color = "black"),
+                         axis.line.y = element_line(color = "black"),
+                         legend.text = element_text(size = 15, color = "black"),
+                         legend.title = element_blank(),
+                         axis.text.y = element_text(size = 13, color = "black"), 
+                         axis.text.x = element_text(size = 13, angle = 90, vjust = 0.5, color = "black"), 
+                         axis.title.x = element_text(size = 15, color = "black"),
+                         axis.title.y = element_text(size = 15,color = "black"),
+                         strip.text = element_text(size = 18, face = "bold", color = "black"),
+                         plot.title = element_text(size=25),
+                         plot.subtitle = element_text(size = 20)
+                         ) +
+              facet_wrap(~ Species_rename2, scales = "free_y", ncol = 5, labeller = label_wrap_gen(width=3))+
+                 xlab("Days") + 
+                geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+                ylab("Relative read abundance [%]") + 
+                scale_x_continuous(breaks=seq(-140,220,40)) +
+                 scale_color_discrete(labels = c("D-AS", "R-AS"))
+
+#ggsave(plot = p_removed, "Figures/Fig.S8-Removed top5.jpeg", height = 4, width = 18)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.S9-Effect of transplantation for PAOs at species level.
+
+## Import filtered dataset
+```{r}
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+## Import venn-diagram species
+```{r}
+#import dataframe from Venn to get shared species before
+df_venn <- readxl::read_excel("data_generated/df_venn.xlsx")
+
+#subset for species shared in D-AS and R-AS before transplantation (528 species)
+sb <- subset(df_venn, VennGroup %in% "NA_before_shared")
+
+## Subset shared species from long format dataset
+shared <- subset(d_long_filt, SampleType %in% "AS" & Species_rename %in% sb$Species_rename)
+#unique(shared$Species_rename) #check that total number of subsetted species is 528
+```
+
+## Import guilds
+```{r}
+guilds <- readxl::read_excel("data_raw/functional guilds MiDAS3.6.xlsx")
+
+# Data wrangling of guilds names
+guilds <- guilds %>% 
+  drop_na() %>% 
+   subset(., !Guild %in% "potential filament in WWTP") #not important
+
+guilds_gendf <- guilds %>% 
+  filter(!`New name`%in% c("midas_s_328", "Ca_Defluviicoccus_seviourii")) %>% #exclude guilds species
+  rename(Genus = `New name`)
+guilds_gendf$Genus <- paste0("g__", guilds_gendf$Genus) #46 genera
+guilds_gen <- guilds_gendf$Genus
+
+guilds_spdf <- guilds %>% 
+  filter(`New name`%in% c("midas_s_328", "Ca_Defluviicoccus_seviourii")) %>% #include guilds species
+  rename(Species_rename = `New name`)
+guilds_spdf$Species_rename <- paste0("s__", guilds_spdf$Species_rename) #2 species
+guilds_sp <- guilds_spdf$Species_rename
+```
+
+```{r}
+# Subset species belonging to guilds from long format dataset
+guilds_sub <- subset(d_long_filt, SampleType %in% "AS" & (Genus %in% guilds_gen | Species_rename %in% guilds_sp))
+unique(guilds_sub$Genus)
+
+# Subset shared species in D-AS and R-AS before transplantation from guilds
+guilds_shared <- subset(guilds_sub, Species_rename %in% unique(shared$Species_rename))
+unique(guilds_shared$Species_rename) #(53 species)
+
+## attach guild tag to the shared guilds before transplantation, by merging with guild genus dataset
+guilds_shared2 <- merge(guilds_shared, guilds_gendf, by = "Genus") #merge with genus
+unique(guilds_shared2$Species_rename)
+```
+
+
+##Subset
+```{r}
+#subset for PAOs
+pao <- guilds_shared2 %>% filter(Guild %in% "PAO") 
+
+#Stats: how many species in each genera belonging to guilds
+pao %>% 
+  group_by(Guild, Genus) %>% 
+  distinct(Species_rename, .keep_all = T) %>% 
+  dplyr::summarise(nrofspecies = n())
+
+#exclude species with average rra less than 0.01 in both donor and recipient AS
+pao %>% 
+  filter(Plants %in% "Recipient" & Transplantation %in% "Before") %>% #for R-AS only "before" transplantation is representative of steady state
+  group_by(Plants, Transplantation, Species_rename) %>%
+  dplyr::summarise(mean = mean(rra_sp)) %>% 
+  arrange(desc(mean)) %>% 
+  filter(mean < 0.01)
+#in R-AS all PAO species are > 0.01 on average before transplantation   
+   
+pao %>% 
+    filter(Plants %in% "Donor") %>%   #for D-AS both "before" and "after" transplantation is representative of steady state, so the whole sampling period is consider to check the average rra
+   group_by(Plants, Species_rename) %>%
+    summarise(mean = mean(rra_sp)) %>% 
+  arrange(desc(mean)) %>% 
+  filter(mean < 0.01) #%>% 
+ # pull(Species_rename)
+
+pao2 <- pao %>% 
+    filter(!Species_rename %in% c("s__midas_s_1177", "s__midas_s_1827"))
+
+#exclude PAO genera with less than 2 species - exlcude Gemmatimonas genus. Not useful to see how different species within a genus behave.
+pao3 <- pao2 %>% filter(!Genus %in% "g__Gemmatimonas")
+
+#create a column with only species or ASV name
+pao4 <- pao3 %>% 
+  mutate(Species_rename3 = paste(Species_rename2)) %>% 
+  separate(Species_rename3, c("Gen", "SpeciesASV"), sep = " ") %>% 
+  select(-Gen)
+
+#Create a column with tidy Genus name
+pao4 <- pao4 %>% 
+  mutate(Genus2B = paste(Genus)) 
+pao4$Genus2B <- gsub("g__", "", pao4$Genus2B)
+```
+
+##Plot (loop)
+```{r}
+#plot species within PAOs genera
+
+gg_PAO <- list()#list to store plots
+
+#plot
+for (i in unique(pao4$Genus2B)) {
+  
+  sub <- subset(pao4, Genus2B == i)
+
+gg_PAO[[i]] <- ggplot(sub, aes(x = Days, y = rra_sp, color=Plants)) + 
+  geom_point(size=3) +
+  geom_line(size=1)+
+      theme(legend.position = "bottom",
+           panel.background = element_blank(),
+           axis.line.x = element_line(color = "black"),
+           axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 18, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 12, color = "black"), 
+           axis.text.x = element_text(size = 12, color = "black", angle = 90, vjust = 0.5), 
+           axis.title.x = element_text(size = 15, color = "black"),
+           axis.title.y = element_text(size = 15, color = "black"),
+           strip.text = element_text(size = 18, face = "bold", color = "black"),
+           plot.title = element_text(size=25, hjust = 0.5),
+           plot.subtitle = element_text(size = 20)
+           ) +
+  facet_wrap(~ SpeciesASV, scales = "free", ncol = 5, labeller = label_wrap_gen(width=3))+
+  labs(title = paste0("",i,"")) +
+  xlab("Days") + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  ylab("Relative read abundance [%]") + 
+  scale_color_discrete(labels = c("D-AS", "R-AS")) +
+  scale_x_continuous(breaks=seq(-140,220,40)) 
+ 
+ }
+
+
+# sort species within each genus
+gg_PAO$Tetrasphaera$data$SpeciesASV <- factor(gg_PAO$Tetrasphaera$data$SpeciesASV, levels = c("midas_s_5", "midas_s_45", "midas_s_328", "Tetrasphaera_elongata", "midas_s_1378"))
+
+gg_PAO$Ca_Accumulibacter$data$SpeciesASV <- factor(gg_PAO$Ca_Accumulibacter$data$SpeciesASV, levels = c("ASV154", "Ca_Accumulibacter_phosphatis", "midas_s_315", "midas_s_2081"))
+
+gg_PAO$Tessaracoccus$data$SpeciesASV <- factor(gg_PAO$Tessaracoccus$data$SpeciesASV, levels = c("midas_s_307", "midas_s_413", "midas_s_1151"))
+
+gg_PAO$Dechloromonas$data$SpeciesASV <- factor(gg_PAO$Dechloromonas$data$SpeciesASV, levels = c("midas_s_173", "ASV85"))
+
+```
+
+##Combined plot 
+```{r}
+library(cowplot)
+
+tessdech <- plot_grid(gg_PAO$Tessaracoccus + theme(legend.position="none"), 
+                      gg_PAO$Dechloromonas + theme(legend.position="none"),
+                      labels = c("C)", "D)"),
+                      label_size = 20,
+                      ncol = 2,
+                      nrow = 1,
+                      rel_widths = c(1.5, 1))
+
+pall <- plot_grid(gg_PAO$Tetrasphaera + theme(legend.position="none"),
+                  gg_PAO$Ca_Accumulibacter + theme(legend.position="none"),
+                  tessdech,
+                  labels = c("A)", "B)", ""),
+                  label_size = 20,
+                  ncol = 1,
+                  nrow = 3,
+                   align = 'vh',
+                  rel_widths = c(1.5, 1)
+                  ) 
+
+#get legend
+# extract a legend that is laid out horizontally
+legend <- get_legend(
+            gg_PAO$Tetrasphaera + 
+            theme(legend.position = "bottom")
+            )
+
+# add the legend underneath the row we made earlier. Give it 5% of the height of one plot (via rel_heights).
+pall2 <- plot_grid(pall, 
+                  legend, 
+                  ncol = 1, 
+                  rel_heights = c(1, .05)
+                  ) 
+
+ggsave(plot = pall2, "Figures/Fig.S9-PAOs.jpg", width = 18, height = 12)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.S10-Effect of transplantation for genera belonging to functional guilds.
+###Import filtered dataset
+```{r}
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+###Genera of interest
+```{r}
+pao_target <- c("g__Tetrasphaera","g__Ca_Accumulibacter", "g__Dechloromonas", "g__Tessaracoccus")
+gao_target <- c("g__Micropruina","g__Defluviicoccus", "g__Ca_Competibacter", "g__Ca_Contendobacter")
+nitrifiers_target <- c("g__Nitrosomonas", "g__Nitrotoga", "g__Nitrospira")
+filaments_target <- c("g__Ca_Microthrix","g__Trichococcus", "g__Ca_Promineofilum", "g__Ca_Villigracilis", "g__Ca_Amarolinea", 
+               "g__Gordonia", "g__Thiothrix", "g__Ca_Sarcinithrix", "g__Leptothrix", "g__Sphaerotilus")
+
+```
+
+###Subset
+subset genera from main dataset 
+```{r}
+as <- subset(d_long_filt, SampleType %in% "AS")
+```
+
+###Abundance at genus level
+```{r}
+#recalculate abundance at genus level
+as_gen <- as %>%
+  group_by(Plants, SampleType, Days, Genus) %>% 
+  mutate(rra_gen = sum(rra_sp)) %>% 
+  dplyr::select(-Genus2, -Species_rename, -Species_rename2, -Taxa, -SampleReads, -count_sp, -rra_sp) %>% #remove all columns that contain info at species level 
+  unique()
+
+#remove g__ from Genus name
+as_gen$Genus2 <- gsub("g__", "", as_gen$Genus)
+```
+
+###Subset guilds
+```{r}
+#subset from main dataset
+pao <- subset(as_gen, Genus %in% pao_target) %>% mutate(., Guild = "PAOs")
+gao <- subset(as_gen, Genus %in% gao_target) %>% mutate(., Guild = "GAOs")
+nit <- subset(as_gen, Genus %in% nitrifiers_target) %>% mutate(., Guild = "Nitrifiers")
+fil <- subset(as_gen, Genus %in% filaments_target) %>% mutate(., Guild = "Filamentous bacteria")
+
+#merge guilds datasets into a dataframe
+guilds_df <- bind_rows(pao, gao, nit, fil)
+```
+
+###Plot guilds (loop)
+```{r}
+plot <- c()
+
+for(i in unique(guilds_df$Guild)) {
+  
+  #subset the guild
+  sub <- subset(guilds_df, Guild == i)
+  
+  #extract the genera for faceting
+  target <- sub %>% 
+  filter(Plants %in% "Donor") %>% 
+  group_by(Genus2) %>% 
+  summarise(mean = mean(rra_gen)) %>% 
+  arrange(desc(mean)) %>% 
+  pull(Genus2) 
+  
+  #set genera as levels
+  sub$Genus2 <- factor(sub$Genus2, levels = target)
+  
+  #plot guild
+  plot[[i]] <- ggplot(sub, aes(x = Days, y = rra_gen, color=Plants)) + 
+  geom_point(size=3) +
+  geom_line(size=1)+
+     theme(legend.position = "bottom",
+           panel.background = element_blank(),
+           axis.line.x = element_line(color = "black"),
+           axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 18, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 12, color = "black"), 
+           axis.text.x = element_text(size = 12, color = "black", angle = 90, vjust = 0.5), 
+           axis.title.x = element_text(size = 15, color = "black"),
+           axis.title.y = element_text(size = 15, color = "black"),
+           strip.text = element_text(size = 18, face = "bold", color = "black"),
+            plot.title = element_text(size=23, hjust = 0.5),
+           ) +
+  facet_wrap(~ Genus2, scales = "free", ncol = ifelse(i == "PAOs", 4,
+                                                 ifelse(i == "GAOs", 4,
+                                                    ifelse(i == "Nitrifiers", 3,
+                                                        ifelse(i == "Filamentous bacteria", 5,
+                                                        NA))))
+                          )+
+  xlab("Days") + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  ylab("Relative read abundance [%]") + 
+  scale_x_continuous(breaks=seq(-140,220,40)) +
+  scale_color_discrete(labels = c("D-AS", "R-AS")) +
+  labs(title = paste0(i)) 
+}
+
+#extract legend
+p_legend <- plot$PAOs
+```
+
+###Combined plot
+```{r}
+library(ggpubr)
+
+legend <- get_legend(p_legend)
+#as_ggplot(legend)
+
+p_guilds_all <- ggarrange(plot$PAOs + rremove("legend"), 
+                          plot$GAOs + rremove("legend"), 
+                          plot$Nitrifiers + rremove("legend"), 
+                          plot$`Filamentous bacteria` + rremove("legend"), 
+                          legend,
+          ncol = 1,
+          nrow = 5,
+           labels = c("A)", "B)", "C)", "D)"),
+           font.label = list(size = 23, face = "bold"),
+             heights = c(1, 1, 1, 1.5, 0.1)) 
+
+ggsave(plot = p_guilds_all, "Figures/Fig.S10-Time-series genera guilds.jpeg", height = 16, width = 20)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+
+#Fig.S11-Variation over time of abundance of selected species in AS and IWW from the recipient plant. 
+
+###Import filtered dataset
+```{r}
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+##Select species (as.Fig.8)
+```{r}
+#A)Species from model distances. 
+##Select species that contribute the most to the similarity between R-IWW/R-AS(before) and R-IWW/R-AS(after-late) and have a high VIP score. 
+A <- c("f__Ruminococcaceae__ASV3228",
+        "s__midas_s_299",
+       "s__midas_s_2082",
+       "f__Sphingomonadaceae__ASV35937",
+       "s__midas_s_207"
+                )
+
+#B)Added species.
+##Selected unique and abundant species of D-AS added to R-AS
+B <- c("s__midas_s_1",
+       "g__Dietzia__ASV97",
+       "s__midas_s_243",
+       "s__Sphingopyxis_bauzanensis",
+       "s__midas_s_220")
+
+#C)Species within guilds
+C <- c("s__Ca_Microthrix_parvicella",
+       "s__midas_s_403",
+       "s__midas_s_4",
+       "s__midas_s_307",
+       "s__midas_s_5")
+```
+
+###Subset
+```{r}
+#subset for recipient AS samples 
+recz <- subset(d_long_filt, Plants %in% "Recipient") 
+
+# Subset the 3 groups of species from recipient dataset
+rec_A <- subset(recz, Species_rename %in% A) %>% mutate(., SpGroup = "A")
+rec_B <- subset(recz, Species_rename %in% B) %>% mutate(., SpGroup = "B")
+rec_C <- subset(recz, Species_rename %in% C) %>% mutate(., SpGroup = "C")
+
+#merge species group into a dataframe
+rec_abc <- bind_rows(rec_A, rec_B, rec_C)
+```
+
+###Plots (loop)
+```{r}
+#plot
+plot <- list()
+
+for(i in unique(rec_abc$SpGroup)) {
+  
+  #subste for each species group (A, B, C)
+  sub <- subset(rec_abc, SpGroup == i)
+  
+  for(y in unique(sub$SampleType)) {
+    
+    #subste for each species type (AS or IWW)
+    sub2 <- subset(sub, SampleType == y)
+    
+    #plot
+    plot[[i]][[y]] <- ggplot(sub2, aes(x = Days, y = rra_sp, group = Species_rename2)) + 
+                  geom_point(size=3, color = ifelse(sub2$SampleType == "AS", 
+                                                    "darkblue",
+                                                    "#4DB3E6")) +
+                  geom_line(size=1, color = ifelse(sub2$SampleType == "AS", 
+                                                    "darkblue",
+                                                    "#4DB3E6"), alpha =0.6)+
+                     theme(legend.position = "none",
+                           panel.background = element_blank(),
+                           axis.line.x = element_line(color = "black"),
+                           axis.line.y = element_line(color = "black"),
+                           legend.text = element_text(size = 10, color = "black"),
+                           legend.title = element_blank(),
+                           axis.text.y = element_text(size = 13, color = "black"), 
+                           axis.text.x = element_text(size = 13, angle = 90, vjust = 0.5, color = "black"), 
+                           axis.title.x = element_text(size = 15, color = "black"),
+                           axis.title.y = element_text(size = 15,color = "black"),
+                           strip.text = element_text(size = 18, face = "bold", color = "black"),
+                           plot.title = element_text(size=25),
+                           plot.subtitle = element_text(size = 20)
+                           ) +
+  facet_wrap(~ Species_rename2, scales = "free_y", ncol = 5, labeller = label_wrap_gen(width=3))+
+   ylab("") +
+   geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  scale_x_continuous(limits = c(-140, 220), breaks=seq(-140,220,40))
+    
+  }
+  
+}
+
+#impose factor for group A
+levels_A <- c("Ruminococcaceae ASV3228", "Tetrasphaera midas_s_299", "Hyphomicrobium midas_s_2082", "Sphingomonadaceae ASV35937", "midas_g_207 midas_s_207")
+
+plot$A$AS$data$Species_rename2 <- factor(plot$A$AS$data$Species_rename2, levels = levels_A)
+plot$A$IWW$data$Species_rename2 <- factor(plot$A$IWW$data$Species_rename2, levels = levels_A)
+
+#extract legend
+p_legend <- ggplot(rec_A, aes(x = Days, y = rra_sp, color=SampleType, group =  interaction(SampleType, Species_rename2))) + 
+  geom_point(size=3) +
+  geom_line(size=1)+
+     theme(legend.position = "bottom",
+           panel.background = element_blank(),
+           axis.line.x = element_line(color = "black"),
+           axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 18, color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 13, color = "black"), 
+           axis.text.x = element_text(size = 13, angle = 90, vjust = 0.5, color = "black"), 
+           axis.title.x = element_text(size = 15, color = "black"),
+           axis.title.y = element_text(size = 15,color = "black"),
+           strip.text = element_text(size = 18, face = "bold", color = "black"),
+           plot.title = element_text(size=25),
+           plot.subtitle = element_text(size = 20)
+           ) +
+  facet_wrap(~ Species_rename2, scales = "free_y", ncol = 5, labeller = label_wrap_gen(width=3))+
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  scale_x_continuous(breaks=seq(-140,220,40)) +
+   scale_colour_manual(values = c("darkblue", "#4DB3E6"),
+                       labels = c("R-AS", "R-IWW"))
+```
+
+###Extract each plot (loop)
+```{r}
+#combining AS and IWW from the sample species group into one plot
+p_sub2 <- c()
+
+for(i in unique(rec_abc$SpGroup)){
+  
+  p_sub <- plot[[i]]
+  
+  p_sub2[[i]] <- ggpubr::ggarrange(p_sub$AS + rremove("xlab"),
+                                   p_sub$IWW + rremove("xlab"),
+                                   ncol = 1,
+                                   nrow = 2,
+                                   align = "hv") 
+  
+  p_sub2[[i]] <- annotate_figure(p_sub2[[i]],
+                left = text_grob("Relative read abundance [%]", size = 18, rot = 90),
+                bottom = text_grob("Days", size = 18),
+                fig.lab = ifelse(i == "A", "A)",
+                                 ifelse(i == "B", "B)",
+                                        ifelse(i == "C", "C)",
+                                        "NA"))), 
+                fig.lab.face = "bold",
+                fig.lab.size = 25,
+                fig.lab.pos = "top.left")
+}
+
+```
+
+###Save combined plot
+```{r}
+library(ggpubr)
+
+#get legend
+legend <- get_legend(p_legend)
+as_ggplot(legend)
+
+#plot and legend together
+p_all <- ggarrange(p_sub2$A, p_sub2$B, p_sub2$C, legend,
+                ncol = 1,
+                nrow = 4,
+                heights = c(1, 1, 1, 0.1))
+
+ggsave(plot = p_all, "Figures/Fig.S11-Time-series IWW and AS.jpeg", height = 16, width = 20)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```

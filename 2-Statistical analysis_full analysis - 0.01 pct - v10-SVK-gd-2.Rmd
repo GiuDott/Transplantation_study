@@ -1,0 +1,704 @@
+---
+title: "R code for analysis of group split for threshold of 0.01% (plus measurements from after-later)"
+date: "6/27/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(echo=FALSE, fig.width=7, fig.height=4, fig.res=300, 
+                      dev.args=list(pointsize=8), pdf.encoding = 'UTF-8', 
+                      fig.align='center', warning=FALSE)
+
+rm(list = ls())
+library(ggplot2)
+library(mdatools)
+library(readxl)
+library(kableExtra)
+load(file = "data_generated/Additional-file-4_fullData001pct2.RData")
+
+# define colors for the groups
+c3 <- mdaplot.getColors(3)
+col <- c(
+   "R-AS (after - early)" = c3[1], "D-AS (after - early)" = c3[1],
+   "R-AS (after - intermediate)" = c3[2], "D-AS (after - intermediate)" = c3[2],
+   "R-AS (after - later)" = c3[3], "D-AS (after - later)" = c3[3],
+   "R-AS (before)" = "black", "D-AS (before)" = "black",
+   "R-IWW" = "gray", "D-IWW" = "gray"
+)
+
+# define markers for the groups
+pch <- c(
+   "R-AS (after - early)" = 1, "D-AS (after - early)" = 1,
+   "R-AS (after - intermediate)" = 1, "D-AS (after - intermediate)" = 1,
+   "R-AS (after - later)" = 1, "D-AS (after - later)" = 1,
+   "R-AS (before)" = 3, "D-AS (before)" = 2
+)
+
+#' Computes and returns PCA model with proper number of components
+#' @param X named list with datasets
+#' @param name name of the subset you want to make a model for
+#' @param minexpvar threshold for cumultative explained variance to select proper 
+#' number of components
+getModel <- function(X, name, minexpvar = 70) {
+   
+   m <- pca(X[[name]], center = TRUE, scale = TRUE, ncomp = 15)
+   ncomp <- which(m$res$cal$cumexpvar > minexpvar)[1]
+   m <- selectCompNum(m, ncomp)
+   
+   # add the dataset as a part of the model to make code cleaner
+   m$dataset <- X[[name]]
+   m$info <- name
+   return(m)
+}
+
+#' Computes discrimination power for species (ability to discriminate between two 
+#' PCA models, m1 and m2)
+#' @param m1 PCA model object returned by getModel() method
+#' @param m2 PCA model object returned by getModel() method
+getDiscriminationPower <- function(m1, m2) {
+   
+   # number of observations in each dataset
+   n1 <- nrow(m1$dataset)
+   n2 <- nrow(m2$dataset)
+   
+   # number of selected components in each model
+   ncomp1 <- m1$ncomp.selected
+   ncomp2 <- m2$ncomp.selected
+   
+   # project each dataset to each model
+   r11 <- predict(m1, m1$dataset)
+   r22 <- predict(m2, m2$dataset)
+   r12 <- predict(m1, m2$dataset)
+   r21 <- predict(m2, m1$dataset)
+   
+   # get matrix with residual for each projection results
+   e11 <- r11$residuals
+   e22 <- r22$residuals
+   e12 <- r12$residuals
+   e21 <- r21$residuals
+
+   # compute variance of the residual values for each species   
+   s11 <- colSums(e11^2) / (n1 - ncomp1 - 1)
+   s22 <- colSums(e22^2) / (n2 - ncomp2 - 1)
+   s12 <- colSums(e12^2) / (n1 - 1)
+   s21 <- colSums(e21^2) / (n2 - 1)
+
+   # compute discrimination power as a ration of variance sum for cross-predictions to the variance 
+   # sum for own model predictions
+   return(sqrt((s12 + s21) / (s11 + s22)))
+}
+
+#' Computes "distance" between two PCA models, m1 and m2
+#' @param m1 PCA model object returned by getModel() method
+#' @param m2 PCA model object returned by getModel() method
+getModelDistance <- function(m1, m2) {
+   
+   # number of observations in each dataset
+   n1 <- nrow(m1$dataset)
+   n2 <- nrow(m2$dataset)
+   
+   # number of selected components in each model
+   ncomp1 <- m1$ncomp.selected
+   ncomp2 <- m2$ncomp.selected
+   
+   # get matrix with residual for each projection results
+   r11 <- predict(m1, m1$dataset)
+   r22 <- predict(m2, m2$dataset)
+   r12 <- predict(m1, m2$dataset)
+   r21 <- predict(m2, m1$dataset)
+   
+   # get matrix with residual for each projection results
+   e11 <- r11$residuals
+   e22 <- r22$residuals
+   e12 <- r12$residuals
+   e21 <- r21$residuals
+
+   # compute variance of all values from the residual values   
+   # strictly speaking we also need to divide to number of species but since we take a ratio 
+   # and number of species is the same in all models - we do not need to do this
+   s11 <- sum(e11^2) / (n1 - ncomp1 - 1)
+   s22 <- sum(e22^2) / (n2 - ncomp2 - 1)
+   s12 <- sum(e12^2) / (n1 - 1)
+   s21 <- sum(e21^2) / (n2 - 1)
+   
+   return(sqrt((s12 + s21) / (s11 + s22)))
+}
+
+#' Make plot for total distance from set of measurements to two PCA models, m1 and m2)
+#' @param m1 PCA model object returned by getModel() method
+#' @param m2 PCA model object returned by getModel() method
+#' @param X named list with datasets (first two should be calibration sets for m1 and m2)
+#' @param alpha significance level for acceptance borders
+#' @param pch vector with point characters (marker symbols) - first two are for calsets for m1 and m2
+#' @param cex vector with point sizes (marker sizes) - first two are for calibration sets for m1 and m2
+#' @param log logical, should distance values be log transformed or not
+plotTotalDistances <- function(m1, m2, X, alpha = 0.01, cex = c(1.2, 1.2, rep(1.1, length(X) - 2)),
+                               equal.axes = FALSE, log = FALSE, show.plot = TRUE, ...) {
+
+   # compute acceptance limit for m1
+   ncomp1 <- m1$ncomp.selected
+   Nh1 <- m1$T2lim[4, ncomp1]
+   h01 <- m1$T2lim[3, ncomp1]
+   Nq1 <- m1$Qlim[4, ncomp1]
+   q01 <- m1$Qlim[3, ncomp1]
+   f.lim1 <- qchisq(1 - alpha, Nq1 + Nh1)
+   if (log) f.lim1 <- log(1 + f.lim1)
+
+   # compute acceptance limit for m2
+   ncomp2 <- m2$ncomp.selected
+   Nh2 <- m2$T2lim[4, ncomp2]
+   h02 <- m2$T2lim[3, ncomp2]
+   Nq2 <- m2$Qlim[4, ncomp2]
+   q02 <- m2$Qlim[3, ncomp2]
+   f.lim2 <- qchisq(1 - alpha, Nq2 + Nh2)
+   if (log) f.lim2 <- log(1 + f.lim2)
+   
+   # function which computes total distance from dataset with index "i" to both models, m1 and m2
+   f <- function(i) {
+      res1 <- predict(m1, X[[i]])
+      res2 <- predict(m2, X[[i]])
+      
+      q1 <- res1$Q[, ncomp1]
+      h1 <- res1$T2[, ncomp1]
+      q2 <- res2$Q[, ncomp2]
+      h2 <- res2$T2[, ncomp2]
+
+      f1 <- q1 / q01 * Nq1 + h1 / h01 * Nh1
+      f2 <- q2 / q02 * Nq2 + h2 / h02 * Nh2
+
+      if (log) {
+         f1 <- log(1 + f1)
+         f2 <- log(1 + f2)
+      }
+      
+      f <- cbind(f1, f2)
+      return(f)      
+   }
+   
+   f <- sapply(seq_along(X), f)
+   names(f) <- names(X)
+   ylim <- c(if (log) 1 else 0, max(sapply(f, function(x) 1.1 * max(x[, 2]))))
+   xlim <- c(if (log) 1 else 0, max(sapply(f, function(x) 1.1 * max(x[, 1]))))
+   
+   
+   # if log scale, make axis limits equal
+   if (log) {
+      xlim[2] <- ylim[2] <- max(c(xlim, ylim))
+   }
+   
+   if (equal.axes) {
+      xlim <- ylim <- range(c(xlim, ylim))
+   }
+   
+   if (!show.plot) {
+      points <- data.frame()
+      for (n in names(f)) {
+         points <- rbind(
+            points, 
+            data.frame(
+                f1 = f[[n]][, 1], 
+                f2 = f[[n]][, 2], 
+                ID = rep(n, nrow(f[[n]]))
+            )
+         )
+      }      
+      return(list(
+         points = points, 
+         lim1 = f.lim1, 
+         lim2 = f.lim2
+      ))
+   }
+   
+   mdaplotg(
+      f, type = "p", xlim = xlim, ylim = ylim, cex = cex,
+      main = "Total distance to models",
+      xlab = paste0(if (log) "Logarithm of f" else "F", "ull distance to model ", m1$info), 
+      ylab = paste0(if (log) "Logarithm of f" else "F", "ull distance to model ", m2$info),
+      col = col[names(f)], pch = pch[names(f)]
+   )
+   
+   abline(h = f.lim1, lty = 2, col = "gray")
+   abline(v = f.lim2, lty = 2, col = "gray")
+}
+
+#' Make plot for total distance from set of measurements to one PCA model
+#' @param m PCA model object returned by getModel() method
+#' @param X named list with datasets (first two should be calibration sets for m1 and m2)
+#' @param alpha significance level for acceptance borders
+plotTotalDistance <- function(m, X, alpha = 0.01, ...) {
+
+   # compute acceptance limit
+   ncomp <- m$ncomp.selected   
+   Nh <- m$T2lim[4, ncomp]
+   h0 <- m$T2lim[3, ncomp]
+   Nq <- m$Qlim[4, ncomp]
+   q0 <- m$Qlim[3, ncomp]
+   f.lim <- qchisq(1 - alpha, Nq + Nh)
+
+   f <- function(x) {
+      res <- predict(m, x)
+      q <- res$Q[, ncomp]
+      h <- res$T2[, ncomp]
+      f <- q / q0 * Nq + h / h0 * Nh
+      attr(f, "xaxis.values") <- attr(res$Q, "yaxis.values")
+      attr(f, "xaxis.name") <- attr(res$Q, "yaxis.name")
+      return(f)
+   }
+
+   f <- lapply(X, f)
+   names(f) <- names(X)
+   
+   ylim <- range(sapply(f, range))   
+   mdaplotg(f, type = "b", main = paste("Total distance to model", m$info), ylim = ylim, 
+            col = col[names(f)], pch = pch[names(f)])
+   abline(h = f.lim, lty = 2, col = "gray")
+   abline(v = 0, lty = 3, col = "gray")
+}
+
+
+#' Computes VIP scores for PCA model
+getVIPScores <- function(m) {
+   return(sqrt(nrow(m$loadings) * rowSums(m$loadings^2 %*% diag(m$res$cal$expvar/100))))
+}
+```
+
+
+# 1. Data preparation
+
+The dataset was prepared using the raw `.tsv` file as follows:
+
+1. Original data was loaded and transformed into 135x12344 matrix `Counts` containing number of counts (absolute abundance)
+
+2. The counts were normalized, so abundance values in every row sum up to one, the result with relative abundance values was saved into a matrix `Abundance`. 
+
+3. Data frame `Meta` with 135 rows was also created containing the following columns: `ID`, `Plant`, `Type`, `Day`.
+
+4. Based on the plant, type and day values the following groups were created:
+
+   * `D-IWW` — (20 measurements - all measurements for D-IWW)
+   * `D-AS (before)` — (11 measurements for D-AS before transplantation)
+   * `D-AS (after - early)` — (10 measurements for D-AS during first 40 days)
+   * `D-AS (after - intermediate)` — (15 measurements for D-AS for days from 41 to 150)
+   * `D-AS (after - later)` — (8 measurements for D-AS for days from 151 and on)
+   * `R-IWW` — (20 measurements - all measurements for R-IWW)
+   * `R-AS (before)` (18 measurements for R-AS before transplantation)
+   * `R-AS (after - early)` — (10 measurements for R-AS during first 40 days)
+   * `R-AS (after - intermediate)` — (15 measurements for R-AS for days from 41 to 150)
+   * `R-AS (after - later)` — (8 measurements for R-AS for days from 151 and on)
+
+5. The group names were added as an extra column to `Meta` data frame.
+
+6. For each species in `Abundance` matrix, a mean abundance was computed separately using measurements from the groups. Species which have abundance smaller than 0.0001 (0.01%) in all ten groups were removed from this matrix.
+
+7. Additionally species "s__midas_s_1344" and "g__midas_g_67__ASV4043" were removed as we agreed [because they had increasing abundance only in the final 8 samples taken from the recipient plant (R-AS (after-late)) and therefore were considered not relevant for the evaluation of transplantation].
+
+The result was saved into file `fullData001pct2.RData` (Additional file 4) and it consists of matrix `Abundance` with 135 rows and `r ncol(Abundance)` columns, matrix `Counts` with 135 rows and 12344 columns, and data frame `Meta` with 135 rows and 5 columns.
+
+###export
+```{r}
+#Export abundance table with filtered species
+Abundance_df <- as.data.frame(Abundance)
+Abundance_df <- tibble::rownames_to_column(Abundance_df, "SampleID")
+
+# data.table::fwrite(Abundance_df,file = "data_generated/Abundance_df.tsv", sep = "\t")
+```
+
+## 2. Distance from measurements to models
+
+In this part I create two PCA models — one for all samples from *R-AS (before)* and one for all samples from *D-AS (before)*. Both sets include all samples made for these two plants and AS location, which have negative value for variable *Day*.
+
+After that I take three datasets — *R-AS (after - early)*, *R-AS (after - intermediate)*, and *R-AS (after - later)*  and project the datasets to these two models. Then I compute a full distance, *f*, which tells how well a particular model explains behaviour of a particular sample. 
+
+The distances are used to make two kinds of plots:
+
+1. Distance from a particular model vs. days.
+2. Distance from R-AS vs distance from D-AS (a.k.a. Cooman's plot)
+
+Here are the plots
+
+```{r, fig.width=8, fig.height=4}
+
+# get datasets as a list
+groupNames <- c("D-AS (before)", "R-AS (before)", "R-AS (after - early)", 
+                "R-AS (after - intermediate)", "R-AS (after - later)") 
+X <- lapply(groupNames, function(g) mda.subset(Abundance, Meta$Group == g))
+names(X) <- groupNames
+
+# create PCA models
+md <- getModel(X, "D-AS (before)")
+mr <- getModel(X, "R-AS (before)")
+
+
+# define subsets of groups for the plots
+s1 <- c("R-AS (before)", "R-AS (after - early)", "R-AS (after - intermediate)", 
+        "R-AS (after - later)")
+s2 <- c("R-AS (before)", "D-AS (before)", "R-AS (after - early)", 
+        "R-AS (after - intermediate)", "R-AS (after - later)")
+
+# show plots
+layout(matrix(c(1, 1, 1, 3, 3, 2, 2, 2, 3, 3), nrow = 2, byrow = T))
+plotTotalDistance(md, X[s1])
+plotTotalDistance(mr, X[s1])
+plotTotalDistances(mr, md, X[s2])
+
+```
+
+###Fig.2B
+```{r}
+#plot Cooman's plot
+pCooman_data <- plotTotalDistances(mr, md, X[s2], show.plot = FALSE)
+
+#export plot for later use
+#saveRDS(pCooman_data, file = "data_generated/pCooman.Rds")
+
+ggplot(pCooman_data$points, aes(f1, f2)) + 
+   geom_point(aes(colour = ID, shape = ID), size = 2.5) + 
+   geom_hline(yintercept = pCooman_data$lim1, linetype = "dashed", colour = "gray") + 
+   geom_vline(xintercept = pCooman_data$lim2, linetype = "dashed", colour = "gray") +
+   labs(x = "Full distance to model R-AS(before)",
+        y = "Full distance to model D-AS(before") +
+   theme_bw()+
+   theme(legend.position = c(.80, .75),
+         legend.box.background = element_rect(colour = 'black')) +
+   scale_colour_manual(name = "SampleGroup", 
+                     values = c("black", "black", "blue", "darkgreen","red")) +
+   scale_shape_manual(name = "SampleGroup",
+                      values= c(3, 2, 1, 1, 1)) 
+
+
+# jpeg("Figures/Fig.2-Cooman.jpg", width = 500, height = 500)
+# plotTotalDistances(mr, md, X[s2], col = col3)
+# title(outer = T, adj = 0, main = "B)", cex.main = 1.5, col="black", font=2, line=-2.5)
+```
+
+Both plots show that after transplantation recipient jumps closer to donor model (and is more far from the recipient model) and then starting rapidly getting back. After a while (day 45) this process is getting slower.
+
+
+### Outliers
+
+After we removed the two additional species and also put the "after-later" subset into the analysis, we can observe that one of the measurements for "R-AS (before)" looks like an outlier when it is being projected to the model made for "D-AS (before)". It corresponds to day -22. Here is analysis of residuals for this measurement as well as for the measurements made for day -28 and day -16 (ordered from largest to smallest, shown only ten largest):
+
+```{r, fig.width = 7, fig.height = 4}
+ncomp <- md$ncomp.selected
+ncol <- md$ncomp
+r <- predict(md, X[["R-AS (before)"]])
+E <- r$residuals + tcrossprod(r$scores[, (ncomp + 1):ncol], mr$loadings[, (ncomp + 1):ncol])
+TPT <- tcrossprod(r$scores[, 1:ncomp], mr$loadings[, 1:ncomp ])
+
+row.ind <- attr(r$scores, "yaxis.values") %in% c(-28, -22, -16)
+col.ind <- order(E[attr(r$scores, "yaxis.values") == -22, ], decreasing = TRUE)
+par(mar = c(15, 4, 2, 2))
+mdaplotg(
+   mda.subset(E, select = col.ind[1:10], row.ind), 
+   xlas = 2, xticks = 1:10, xticklabels = colnames(E)[col.ind[1:10]], xlab = "",
+   type = "h")
+
+```
+
+We can see that the first species shown on the plot makes this distance so large. Here is how the abundance for this species looks like if we take all data (all sets and all days):
+
+```{r, fig.width = 7, fig.height = 4}
+mdaplotg(lapply(X, function(x) mda.t(mda.subset(x, select = "o__Micrococcales__ASV7965"))),
+         type = "b", pch = 1, show.labels = TRUE, main = "o__Micrococcales__ASV7965")
+```
+
+I decided to exclude this sample ("R-AS before", day -22) for further analysis. 
+
+Here is a new distance plot without this sample:
+
+```{r, fig.width=8, fig.height=4}
+Abundance <- mda.subset(Abundance, !(Meta$Day == -22 & Meta$Plant == "R"))
+Meta <- mda.subset(Meta, !(Meta$Day == -22 & Meta$Plant == "R"))
+
+# get datasets as a list
+groupNames <- c("R-AS (before)", "R-AS (after - early)", "R-AS (after - intermediate)", 
+                "R-AS (after - later)", "D-AS (before)") 
+X <- lapply(groupNames, function(g) mda.subset(Abundance, Meta$Group == g))
+names(X) <- groupNames
+
+# create PCA models
+md <- getModel(X, "D-AS (before)")
+mr <- getModel(X, "R-AS (before)")
+
+# apply model to all groups from X
+rr <- lapply(X, function(x) predict(mr, x))
+rd <- lapply(X, function(x) predict(md, x))
+
+# define subsets of groups for the plots
+s1 <- c("R-AS (before)", "R-AS (after - early)", "R-AS (after - intermediate)", 
+        "R-AS (after - later)")
+s2 <- c("R-AS (before)", "D-AS (before)", "R-AS (after - early)", 
+        "R-AS (after - intermediate)", "R-AS (after - later)")
+
+# show plots
+layout(matrix(c(1, 1, 1, 3, 3, 2, 2, 2, 3, 3), nrow = 2, byrow = T))
+plotTotalDistance(md, X[s1])
+plotTotalDistance(mr, X[s1])
+plotTotalDistances(mr, md, X[s2])
+```
+
+##Fig.S3
+Distance to Donor
+```{r}
+#jpeg("Figures/Fig.S3-Dist to DAS.jpg", width = 800, height = 400)
+par(mfrow = c(1, 2))
+plotResiduals(md, legend.position = "topleft", main = "Distances to D-AS (before)",
+              res = rd, pch = pch[names(rd)], col = col[names(rd)])
+title(outer = T, adj = 0.02, main="A)", cex.main = 1.5, col="black", font=2, line=-2.5)
+plotTotalDistance(md, X[s1], col = col1)
+title(outer = T, adj = 0.5, main="B)", cex.main = 1.5, col="black", font=2, line=-2.5)
+```
+
+##Fig.S4
+Distance to Recipient
+```{r}
+#jpeg("Figures/Fig.S4-Dist to RAS.jpg", width = 800, height = 400)
+par(mfrow = c(1, 2))
+plotResiduals(mr, legend.position = "topleft", main = "Distances to R-AS (before)", 
+              res = rr, pch = pch[names(rr)], col = col[names(rr)])
+title(outer = T, adj = 0.02, main="A)", cex.main = 1.5, col="black", font=2, line=-2.5)
+plotTotalDistance(mr, X[s1], col = col2)
+title(outer = T, adj = 0.5, main="B)", cex.main = 1.5, col="black", font=2, line=-2.5)
+```
+
+## 3. Distance between models (Fig.7)
+
+Here I reproduce the analysis we made before but for new split for groups. 
+
+```{r, fig.width=8, fig.height=4}
+#' Computes and shows plot for distance between a basis model and the others by 
+#' using cross-validation
+#' @param X list with the datasets
+#' @param basis.name name of a dataset to be used for creating a basis model
+plotModelDistanceCV <- function(X, basis.name, ...) {
+   
+   # names of groups to be shown on the plot
+   groupNames <- c(
+      "R-AS (before)", "R-AS (after - early)", "R-AS (after - intermediate)", 
+      "R-AS (after - later)", "R-IWW", 
+      "D-AS (before)", "D-AS (after - early)", "D-AS (after - intermediate)", 
+      "D-AS (after - later)", "D-IWW"
+   )
+
+   m <- list()
+   for (name in groupNames)  m[[name]] <- getModel(X, name)
+   n <- length(groupNames)
+   
+   mdcv <- matrix(0, nrow = n, ncol = n)
+   for (i in seq_len(n)) {
+      mcv <- getModel(list("X" = X[[basis.name]][-i, ]), "X")
+      for (j in seq_along(groupNames)) {
+         mdcv[i, j] <- getModelDistance(mcv, m[[groupNames[j]]])
+      }
+   }
+
+   
+   m <- apply(mdcv, 2, mean)
+   s <- apply(mdcv, 2, sd)
+   
+   show(names(m))
+   par(mar = c(12, 4, 2, 2))
+   mdaplot(m, type = "h", opacity=0.5, xticks = seq_len(n), xticklabels = groupNames, 
+           col = col[groupNames], xlas = 2, xlab = "", 
+           main = paste0("Distance from ", basis.name, " model"), ...)
+   mdaplot(rbind(m, s), type = "e", show.axes = FALSE, col = "black")
+ 
+   d <- data.frame(Group = as.factor(groupNames), mean = m, sd = s)
+   return(d)
+}
+
+# get datasets as a list
+groupNames <- unique(Meta$Group) 
+X <- lapply(groupNames, function(g) mda.subset(Abundance, Meta$Group == g))
+names(X) <- groupNames
+
+#jpeg("Figures/Fig.7-Barplot models distance immigration.jpg", width = 900, height = 500)
+par(mfrow=c(1, 2))
+d1 <- plotModelDistanceCV(X, "R-IWW", ylim = c(0, 250))
+d2 <- plotModelDistanceCV(X, "D-IWW", ylim = c(0, 250))
+
+cat("\nDistances from R-IWW (cv - mean and std)\n")
+show(d1$Group)
+show(d1)
+
+cat("\nDistances from D-IWW (cv - mean and std)\n")
+show(d2)
+```
+
+
+```{r, fig.width=8, fig.height=4}
+library(ggpubr)
+colgroups = c("AS (before)", "AS (after-early)", "AS (after-intermediate)", "AS (after-late)", "IWW")
+Groups = rep(colgroups, 2)         
+d1$Group = factor(d1$Group, levels = d1$Group)
+d2$Group = factor(d2$Group, levels = d2$Group)
+
+p1 <- ggplot(d1, aes(x=Group, y=mean, fill=Groups)) + 
+  geom_bar(stat="identity", color="black", position=position_dodge(), alpha = 0.5) +
+  geom_errorbar(aes(ymin=mean - sd, ymax= mean + sd), width=.2, position=position_dodge(.9)) +
+   theme_bw() +
+   theme(axis.text.x = element_text(angle = 90, colour = "black", vjust = 0.5, hjust = 1),
+         legend.position = "bottom",
+         title = element_text(face = "bold", colour = "black"),
+         plot.title = element_text(hjust = 0.5)) +
+   labs(title = "Distance from R-IWW model") +
+   scale_fill_manual("Group", values = c("AS (before)" = "black", 
+                                         "AS (after-early)" = c3[1], 
+                                         "AS (after-intermediate)" = c3[2],
+                                         "AS (after-late)" = c3[3],
+                                         "IWW" = "gray"))
+
+p2 <- ggplot(d2, aes(x=Group, y=mean, fill=Groups)) + 
+  geom_bar(stat="identity", color="black", position=position_dodge(), alpha = 0.5) +
+  geom_errorbar(aes(ymin=mean - sd, ymax= mean + sd), width=.2, position=position_dodge(.9)) +
+   theme_bw()+
+   theme(axis.text.x = element_text(angle = 90, colour = "black", vjust = 0.5, hjust = 1),
+         legend.position = "bottom",
+         title = element_text(face = "bold", colour = "black"),
+         plot.title = element_text(hjust = 0.5)) +
+   labs(title = "Distance from D-IWW model")+
+   scale_fill_manual("Group", values = c("AS (before)" = "black", 
+                                         "AS (after-early)" = c3[1], 
+                                         "AS (after-intermediate)" = c3[2],
+                                         "AS (after-late)" = c3[3],
+                                         "IWW" = "gray"))
+
+
+p_both <- ggarrange(p1 + rremove("legend") + rremove("xlab") + rremove("ylab"), 
+                   p2 + rremove("legend") + rremove("xlab") + rremove("ylab"), 
+                   common.legend = T,
+                   legend = "bottom",
+                   ncol = 2, 
+                   nrow = 1, 
+                   labels = c("A)", "B)"),
+                   font.label = list(size = 16)
+                   )
+
+#ggsave(plot = p_both, filename = "Figures/Fig.7-Barplot models distance immigration.jpeg", height = 7, width = 10)
+```
+
+
+## 4. Discrimination power
+
+The procedure is as follows:
+
+1. I compute kind of VIP scores for species in each PCA model. I do it by taking a weighted sum of squared loading vectors multiplied to the number of species in the models. The weights are the explained variance captured by a particular component. For example, if PC1 explains 30% of the total variance, the squared loading vector values for PC1 will be multiplied by 0.30. 
+
+2. I also compute discrimination power as above. 
+
+3. I select variables which meat two requirements: a) discrimination power is below threshold as before b) vip score is above zero in all three models. So we know that this species is important for all three models.
+
+
+```{r}
+groupNames <- c("R-IWW", "R-AS (before)", "R-AS (after - later)")
+
+X <- lapply(groupNames, function(g) mda.subset(Abundance, Meta$Group == g))
+names(X) <- groupNames
+
+m <- lapply(groupNames, function(g) getModel(X, name = g))
+names(m) <- groupNames
+
+
+vip <- NULL
+for (name in groupNames)  vip <- rbind(vip, getVIPScores(m[[name]]))
+colnames(vip) <- colnames(X[[1]])
+rownames(vip) <- groupNames
+
+dp <- NULL
+for (name in groupNames[c(2, 3)])  dp <- rbind(dp, getDiscriminationPower(m[["R-IWW"]], m[[name]]))
+colnames(dp) <- colnames(X[[1]])
+rownames(dp) <- groupNames[c(2, 3)]
+
+# get rid of species which have NaN at least in one row
+nan.ind <- apply(dp, 2, function(x) any(is.nan(x)))
+dp.nonan <- dp[, !nan.ind]
+vip.nonan <- vip[, !nan.ind]
+
+# check that names are aligned
+if (!all(colnames(vip.nonan) == colnames(dp.nonan))) {
+   stop("Inconsistensy between DP and VIP column names.")
+}
+
+# select species 
+dp.threshold <- 10
+sel.ind1 <- apply(dp.nonan, 2, function(x) all(x < dp.threshold))
+sel.ind2 <- sel.ind1 & apply(vip.nonan, 2, function(x) all(x > 0.00001))
+```
+
+For example if threshold for discrimination power is `r dp.threshold` the number of selected species is `r sum(sel.ind1)` if we use only threshold for selection and `r sum(sel.ind2)` if we also use the non-zero VIP score criterion. Here is a plot for selected species.
+
+```{r, fig.width=7, fig.height=6}
+sel.ind <- sel.ind2
+dp.sel <- dp.nonan[, sel.ind]
+vip.sel <- vip.nonan[, sel.ind]
+
+# order the species according to how similar is DP value in the two cases
+dp.sel <- dp.sel[, order(abs(dp.sel[1, ] - dp.sel[2, ]))]
+
+# save names of the selected species to a separate variable
+cs <- colnames(dp.sel)
+par(mar = c(15, 4, 2, 2))
+mdaplotg(dp.sel, xlas = 2, xlab="", xtick=seq_len(ncol(dp.sel)), xticklabels=colnames(dp.sel), 
+         type = "h", col = col[groupNames[2:3]],  
+         main = "Discrimination power for selected species")
+```
+
+
+```{r}
+
+# indices of species selected before as with low DP
+col.ind <- colnames(Abundance) %in% cs
+
+# get relative abundance measurements for RIWW: from day = -17 to day = 97
+XRIWW <- mda.subset(Abundance, Meta$Plant == "R" & Meta$Type == "IWW" & 
+                       (Meta$Day >= -17 & Meta$Day < 100))
+
+# get rid of some of the days and select proper species/columns
+XRIWW <- mda.subset(XRIWW, c(1:8, 10:11, 13:18, 20), select = col.ind)
+
+# get relative abundance measurements for RAS: from day = -16 to day = 98
+XRAS <- mda.subset(Abundance, Meta$Plant == "R" & Meta$Type == "AS" & 
+                      (Meta$Day >= -16 & Meta$Day < 100))
+
+# get rid of some of the days and select proper species/columns
+XRAS <- mda.subset(XRAS, c(1:2, 4:9, 11:12, 14:19, 21), select = col.ind)
+
+
+# show plots for species whose correlation between the two sets is above 0.par(mfrow = c(3, 2))
+r <- rep(0, ncol(XRIWW))
+for (n in seq_len(ncol(XRIWW))) {
+   if (sd(XRAS[, n]) > 0 & sd(XRIWW[, n]) > 0) {
+      r[n] <- cor(XRIWW[, n], XRAS[, n], method = "pearson")
+      n <- n + 1
+   }
+}
+names(r) <- colnames(XRIWW)
+r <- sort(r, decreasing = TRUE)
+```
+
+For example, if we take species ```r names(r)[1]``` and model R-IWW. Here are loadings values, explained variance, squared loadings and weighted squared loadings for this species in this model:
+
+```{r, fig.width=8, fig.height=4}
+t <- cbind(
+   m$`R-IWW`$loadings[names(r)[1], ], 
+   m$`R-IWW`$calres$expvar / 100,
+   m$`R-IWW`$loadings[names(r)[1], ]^2, 
+   m$`R-IWW`$loadings[names(r)[1], ]^2 * m$`R-IWW`$calres$expvar / 100
+)
+colnames(t) <- c("P", "expvar", "P^2", "P^2 * expvar")
+kable(as.data.frame(t))
+nr <- nrow(m$`R-IWW`$loadings)
+```
+
+If we take a sum of last column and then take a square root of this sum multiplied to the number of species we will get `r sqrt(nr * sum(t[, 4]))` as is also shown in the big table below.
+
+And here is a table with correlations, plus VIP scores for each model plus mean abundance in each of the two groups.
+```{r}
+stat <- as.data.frame(cbind(r, t(vip.sel[, names(r)]), 
+                            100 * apply(XRIWW[, names(r)], 2, mean), 
+                            100 * apply(XRAS[, names(r)], 2, mean)))
+colnames(stat) <- c("r", paste("VIP", rownames(vip)), "m (%): R-IWW", "m (%): R-AS")
+row_spec(kable_classic(knitr::kable(stat, digits = c(3, 3, 3, 4, 4))), 0, angle = 90)
+```

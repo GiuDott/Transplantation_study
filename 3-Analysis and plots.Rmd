@@ -1,0 +1,2228 @@
+---
+title: "Transplantation study: Main analysis and plots"
+author: "Giulia"
+date: "2/2/2022"
+output: html_document
+---
+
+#Load packages
+```{r}
+#R version in use: version.string R version 3.6.1 (2019-07-05)
+
+#load pachages
+library(ampvis2) #version 2.5.1
+library(tidyverse) #version 1.2.1
+library(ggplot2) #version now 3.3.5
+```
+
+#Load dataset
+```{r}
+#long-formatted dataset
+d_long4 <- read.table(file = "data_generated/d_long4.tsv", sep = '\t', header = TRUE)
+d_long4 <- d_long4 %>% mutate_if(is.factor, as.character) #convert factors to character for later subsetting
+
+#ampvis-formatted dataset
+d_amp_sub <- readRDS("data_generated/d_amp_sub.rds")
+```
+
+```{r}
+#list of species used in statistical analysis after filtering
+Abundance <- read.table(file = "data_generated/Abundance_df.tsv", sep = '\t', header = TRUE)
+
+ab_long <- gather(Abundance, Species_rename, ab, 2:2119, factor_key=TRUE) ##from wide to long
+
+#select species after filtering from statistical analysis (2118 species)
+target_sp <- ab_long %>% 
+  select(Species_rename) %>% 
+  unique()
+
+#data wrangling of species_rename names to be subsetted from the ampvis-formatted dataset (classified species start with "s__", while unclassified species contain only ASV number)
+target_sp <- as.data.frame(target_sp)
+target_sp$Species_rename <- as.character(target_sp$Species_rename)
+
+##add "-" instead of dots in some special names
+target_sp$Species_rename[target_sp$Species_rename %in% "g__JGI_0001001.H03__ASV4215"] <- "g__JGI_0001001-H03__ASV4215"
+target_sp$Species_rename[target_sp$Species_rename %in% "g__Ruminococcaceae_UCG.014__ASV4654"] <- "g__Ruminococcaceae_UCG-014__ASV4654" 
+target_sp$Species_rename[target_sp$Species_rename %in% "g__Ruminococcaceae_UCG.014__ASV6637"] <- "g__Ruminococcaceae_UCG-014__ASV6637"  
+target_sp$Species_rename[target_sp$Species_rename %in% "f__0319.6G20__ASV7147"] <- "f__0319-6G20__ASV7147"
+target_sp$Species_rename[target_sp$Species_rename %in% "g__SH.PL14__ASV745"] <- "g__SH-PL14__ASV745"
+target_sp$Species_rename[target_sp$Species_rename %in% "g__Allorhizobium.Neorhizobium.Pararhizobium.Rhizobium__newASV168"] <- "g__Allorhizobium-Neorhizobium-Pararhizobium-Rhizobium__newASV168"
+
+
+target_sp <- target_sp %>% 
+  mutate(Species_renameB = paste0(Species_rename)) %>% 
+   separate(., Species_renameB, c("Root", "Taxa", "ASV"), sep = "__")
+
+target_sp$Target <- ifelse(!grepl("ASV", target_sp$Species_rename, fixed = F),
+                            paste(target_sp$Species_rename),
+                            paste(target_sp$ASV))
+
+```
+
+
+#Subset species
+
+The species filtered prior statistical analysis are now subsetted from the main dataset (from both formats)
+
+##from long-format dataset
+```{r}
+#subset filtered species from long-formatted dataset
+
+d_long_filt <- subset(d_long4, Species_rename %in% target_sp$Species_rename)
+
+##check that total nr of species in the dataset is 2118
+d_long_filt %>%
+  distinct(Species_rename, .keep_all = T) %>%
+  count()
+
+##check possible differences in species names. The result should be 0
+setdiff(target_sp$Species_rename, unique(d_long_filt$Species_rename))
+```
+
+##from ampvis-format dataset
+```{r}
+d_amp_filt <- amp_subset_taxa(d_amp_sub, tax_vector = target_sp$Target)
+```
+
+###check filtering
+```{r}
+##check:filter from dataset the species used for subsetting. It should return an empty subset
+d_amp_filt$tax %>% 
+  filter(!c(Species %in% target_sp$Target | OTU %in% target_sp$ASV))
+
+##check if all species are there with an heatmap
+
+test_hm <- amp_heatmap(d_amp_filt,
+            group_by = c("Plants", "SampleType"),
+            normalise = F,
+            facet_by = "Transplantation",
+            tax_aggregate = "Species",
+            tax_show = 3000, #the max nr of species should be 2118, so this is set to excess
+            color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 5,
+            textmap = T) 
+
+sp_hm <- as.data.frame(rownames(test_hm))
+
+###modify species names os that it can be compared to target:
+
+#### add s__ before species name
+sp_hm <- ifelse(!grepl("ASV", sp_hm$`rownames(test_hm)`, fixed = F),
+                 paste0("s__", sp_hm$`rownames(test_hm)`),
+                 paste0(sp_hm$`rownames(test_hm)`))
+
+
+#### add __ (double undercore) before ASV name (to be able to comapre to "target")
+sp_hm2 <- sp_hm %>% stringr::str_replace("_ASV", "__ASV")
+sp_hm3 <- sp_hm2 %>% stringr::str_replace("_newASV", "__newASV")
+
+View(sp_hm3)
+
+setdiff(sp_hm3, target_sp$Species_rename)
+```
+
+###Export
+
+```{r}
+#long-formatted dataset after species 
+#data.table::fwrite(d_long_filt, file = "data_generated/d_long_filt.tsv", sep = "\t")
+
+#ampvis-formatted dataset after species 
+#saveRDS(object = d_amp_filt, file = "data_generated/d_amp_filt.rds")
+```
+
+###Import filtered dataset
+```{r}
+#import ampvis format
+d_amp_filt <- readRDS('data_generated/d_amp_filt.rds')
+
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+#Analysis and Plots
+
+#Fig.1-Process performance parameters of recipient WWTP. 
+
+###Import process parameters and effluent
+
+```{r Metadata Outlet}
+library(reshape2)
+
+### Outlet ###
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_1.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+  subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
+  subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
+  subset(NOE.outlet.NO3.mg.l < 500) %>%
+  subset(NOE.outlet.TSS.mg.l < 100)
+
+ Outlet1 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_2.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+  subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
+  subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
+  subset(NOE.outlet.NO3.mg.l < 500) %>%
+  subset(NOE.outlet.TSS.mg.l < 100)
+
+ Outlet2 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+
+
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_3.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+  subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
+  subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
+  subset(NOE.outlet.NO3.mg.l < 500) %>%
+  subset(NOE.outlet.TSS.mg.l < 100)
+
+ Outlet3 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+ 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_4.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+  subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
+  subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
+  subset(NOE.outlet.NO3.mg.l < 500) %>%
+  subset(NOE.outlet.TSS.mg.l < 100)
+
+ Outlet4 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+ 
+ Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_med_po4_LT.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+  subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
+  subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
+  subset(NOE.outlet.NO3.mg.l < 500) %>%
+  subset(NOE.outlet.TSS.mg.l < 100)
+
+ Outlet5 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[7:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+ 
+ Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_med_po4_Afløb.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+  subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
+  subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
+  subset(NOE.outlet.NO3.mg.l < 500) %>%
+  subset(NOE.outlet.TSS.mg.l < 100)
+
+ Outlet6 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[7:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+
+Outlet <- rbind(Outlet1, Outlet2, Outlet3, Outlet4, Outlet5, Outlet6)
+Outlet$Origin <- "Outlet"
+
+Outlet$StartTime <- strptime(Outlet$StartTime, format = c("%Y-%m-%d %H:%M:%OS"))
+
+#Days
+Outlet_Days <- Outlet
+Outlet_Days$StartTime <- trunc(Outlet$StartTime, "days") %>%
+as.character() %>%
+as.factor()
+
+Outlet_Days <- aggregate(Value~StartTime+Parameter+Origin, data = Outlet_Days, FUN = "mean")
+
+Outlet_Days$StartTime <- strptime(Outlet_Days$StartTime, format = c("%Y-%m-%d"))
+
+```
+
+
+
+```{r Metadata Egenkontrol}
+### Egenkontrol ###
+
+#Inlet
+Data1 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Tilløb_2016.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data2 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Tilløb_2017.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+
+Data <- rbind(Data1, Data2)
+
+names(Data)[names(Data) == "Prøvetagning"] <- "StartTime"
+names(Data)[names(Data) == "BI5.Biokemisk.iltforbrug.5.døgn..mg.l."] <- "BI5"
+names(Data)[names(Data) == "Ammoniak.ammonium.N..mg.l."] <- "NH4"
+names(Data)[names(Data) == "Nitrat.N..mg.l."] <- "NO3"
+names(Data)[names(Data) == "Nitrogen.total..mg.l."] <- "N_tot"
+names(Data)[names(Data) == "Phosphor..total.P..mg.l."] <- "P_tot"
+names(Data)[names(Data) == "BI5.modif..Biokemisk.iltforbrug.modifificeret.5.døgn..mg.l."] <- "BI5_modif"
+names(Data)[names(Data) == "COD..Kemisk.iltforbrug..mg.l."] <- "COD"
+names(Data)[names(Data) == "Nitrit.N..mg.l."] <- "NO2"
+names(Data)[names(Data) == "Nitrit.nitrat.N..mg.l."] <- "NOx"
+names(Data)[names(Data) == "Ortho.phosphat.P..mg.l."] <- "PO4"
+names(Data)[names(Data) == "Suspenderede.stoffer..mg.l."] <- "SS"
+names(Data)[names(Data) == "Calcium..mg.l."] <- "Ca"
+Data$COD_P_Ratio <- Data$COD/Data$P_tot
+Data$COD_N_Ratio <- Data$COD/Data$N_tot
+
+Analyses_Inlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+Analyses_Inlet$Origin <- "Inlet"
+
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Egenkontrol_Tilløb_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+
+names(Data)[names(Data) == "Date"] <- "StartTime"
+Egenkontrol_Inlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+Egenkontrol_Inlet$Origin <- "Inlet"
+
+#Outlet
+
+Data1 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Afløb_2016.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+
+Data2 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Afløb_2017.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+
+Data <- rbind(Data1, Data2)
+
+names(Data)[names(Data) == "Prøvetagning"] <- "StartTime"
+names(Data)[names(Data) == "BI5.Biokemisk.iltforbrug.5.døgn..mg.l."] <- "BI5"
+names(Data)[names(Data) == "Ammoniak.ammonium.N..mg.l."] <- "NH4"
+names(Data)[names(Data) == "Nitrat.N..mg.l."] <- "NO3"
+names(Data)[names(Data) == "Nitrogen.total..mg.l."] <- "N_tot"
+names(Data)[names(Data) == "Phosphor..total.P..mg.l."] <- "P_tot"
+names(Data)[names(Data) == "BI5.modif..Biokemisk.iltforbrug.modifificeret.5.døgn..mg.l."] <- "BI5_modif"
+names(Data)[names(Data) == "COD..Kemisk.iltforbrug..mg.l."] <- "COD"
+names(Data)[names(Data) == "Nitrit.N..mg.l."] <- "NO2"
+names(Data)[names(Data) == "Nitrit.nitrat.N..mg.l."] <- "NOx"
+names(Data)[names(Data) == "Ortho.phosphat.P..mg.l."] <- "PO4"
+names(Data)[names(Data) == "Suspenderede.stoffer..mg.l."] <- "SS"
+names(Data)[names(Data) == "Calcium..mg.l."] <- "Ca"
+
+
+Analyses_Outlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+
+Analyses_Outlet$Origin <- "Outlet"
+
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Egenkontrol_Afløb_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+
+names(Data)[names(Data) == "Date"] <- "StartTime"
+Egenkontrol_Outlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value")
+Egenkontrol_Outlet$Origin <- "Outlet"
+
+#Combine data
+Egenkontrol <- rbind(Analyses_Inlet, Egenkontrol_Inlet, Analyses_Outlet, Egenkontrol_Outlet)
+
+Egenkontrol$StartTime <- strptime(Egenkontrol$StartTime, format = c("%d.%m.%Y"))
+
+#Days
+Egenkontrol_Days <- Egenkontrol
+Egenkontrol_Days$StartTime <- trunc(Egenkontrol$StartTime, "days") %>%
+as.character() %>%
+as.factor()
+
+Egenkontrol_Days <- subset(Egenkontrol_Days, Parameter %in% unique(Egenkontrol_Days$Parameter))
+Egenkontrol_Days$Value <- as.numeric(Egenkontrol_Days$Value)
+
+Egenkontrol_Days <- aggregate(Value~StartTime+Parameter+Origin, data = Egenkontrol_Days, FUN = "mean")
+
+Egenkontrol_Days$StartTime <- strptime(Egenkontrol_Days$StartTime, format = c("%Y-%m-%d"))
+
+```
+
+```{r Metadata SVI}
+### SVI ###
+Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_2017.11.13.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") #%>%
+
+names(Data)[names(Data) == "Dato"] <- "StartTime"
+names(Data)[names(Data) == "Bundfældningsegenskaber.SV..30.min...ml.l"] <- "SV"
+names(Data)[names(Data) == "Bundfældningsegenskaber.FSV..30.min...ml.l"] <- "FSV"
+names(Data)[names(Data) == "Bundfældningsegenskaber.SS..ext...g.l"] <- "SS"
+names(Data)[names(Data) == "Bundfældningsegenskaber.TS..intern...g.l"] <- "TS"
+names(Data)[names(Data) == "Bundfældningsegenskaber.SVI..ml.g"] <- "SVI"
+names(Data)[names(Data) == "Bundfældningsegenskaber.FSVI..ml.g"] <- "FSVI"
+
+SVI1 <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:(ncol(Data)-1)], variable.name = "Parameter", value.name = "Value")
+
+Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+names(Data)[names(Data) == "Date"] <- "StartTime"
+SVI2 <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:(ncol(Data)-1)], variable.name = "Parameter", value.name = "Value")
+
+Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_FluxTests.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+SVI3 <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:(ncol(Data))], variable.name = "Parameter", value.name = "Value")
+
+SVI <- rbind(SVI1, SVI2, SVI3)
+SVI$Origin <- "Process"
+
+SVI$StartTime <- strptime(SVI$StartTime, format = c("%Y-%m-%d"))
+
+#Days
+SVI_Days <- SVI
+SVI_Days$StartTime <- trunc(SVI$StartTime, "days") %>%
+as.character() %>%
+as.factor() 
+SVI_Days <- subset(SVI_Days, Parameter %in% unique(SVI_Days$Parameter))
+SVI_Days$Value <- as.numeric(SVI_Days$Value)
+
+SVI_Days <- aggregate(Value~StartTime+Parameter+Origin, data = SVI_Days, FUN = "mean")
+
+SVI_Days$StartTime <- strptime(SVI_Days$StartTime, format = c("%Y-%m-%d"))
+
+```
+
+```{r Metadata Sludge}
+### Sludge ###
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Slamrapport_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") 
+names(Data)[names(Data) == "Date"] <- "StartTime"
+Sludge <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value") #3 gives the starting column number for column names to store as measure variables. This differs depending on the original dataformat.
+Sludge$Origin <- "Process"
+
+Sludge$Value <- as.numeric(Sludge$Value)
+
+Sludge$StartTime <- strptime(Sludge$StartTime, format = c("%Y-%m-%d"))
+#The POSIXlt format differs between original dataformats...
+
+Sludge_Days <- Sludge
+Sludge_Days$StartTime <- trunc(Sludge$StartTime, "days") %>%
+as.character() %>%
+as.factor()
+
+Sludge_Days <- aggregate(Value~StartTime+Parameter+Origin, data = Sludge_Days, FUN = "mean")
+
+Sludge_Days$StartTime <- strptime(Sludge_Days$StartTime, format = c("%Y-%m-%d"))
+```
+
+###Calculations
+```{r Calculations}
+#P_Removal
+P_Removal_Days <- subset(Egenkontrol_Days, Parameter %in% "P_tot" & Origin %in% "Inlet")
+P_Removal_Days$Value <-  (subset(Egenkontrol_Days, Parameter %in% "P_tot" & Origin %in% "Inlet")$Value - subset(Egenkontrol_Days, Parameter %in% "P_tot" & Origin %in% "Outlet")$Value)/subset(Egenkontrol_Days, Parameter %in% "P_tot" & Origin %in% "Inlet")$Value
+P_Removal_Days$Parameter <-"P_Removal"
+P_Removal_Days$Origin <-"Calculations"
+
+#N_Removal
+N_Removal_Days <- subset(Egenkontrol_Days, Parameter %in% "N_tot" & Origin %in% "Inlet")
+N_Removal_Days$Value <-  (subset(Egenkontrol_Days, Parameter %in% "N_tot" & Origin %in% "Inlet")$Value - subset(Egenkontrol_Days, Parameter %in% "N_tot" & Origin %in% "Outlet")$Value)/subset(Egenkontrol_Days, Parameter %in% "N_tot" & Origin %in% "Inlet")$Value
+N_Removal_Days$Parameter <-"N_Removal"
+N_Removal_Days$Origin <-"Calculations"
+
+#COD_Removal
+COD_Removal_Days <- subset(Egenkontrol_Days, Parameter %in% "COD" & Origin %in% "Inlet")
+COD_Removal_Days$Value <-  (subset(Egenkontrol_Days, Parameter %in% "COD" & Origin %in% "Inlet")$Value - subset(Egenkontrol_Days, Parameter %in% "COD" & Origin %in% "Outlet")$Value)/subset(Egenkontrol_Days, Parameter %in% "COD" & Origin %in% "Inlet")$Value
+COD_Removal_Days$Parameter <-"COD_Removal"
+COD_Removal_Days$Origin <-"Calculations"
+
+
+#Calculated FSVI based on online TS and FSV
+FSVI_Calculated_FSV <- subset(SVI, Parameter %in% "SludgeVolume30_Calculated")
+FSVI_Calculated_FSV$StartTime <-  as.POSIXct(FSVI_Calculated_FSV$StartTime)
+FSVI_Calculated_LT2_TS <- subset(Sludge, Parameter %in% "LT2_TS")
+FSVI_Calculated_LT2_TS$StartTime <- as.POSIXct(FSVI_Calculated_LT2_TS$StartTime)
+
+FSVI_Calculated <- inner_join(FSVI_Calculated_FSV, FSVI_Calculated_LT2_TS, by = "StartTime", copy = TRUE)
+FSVI_Calculated$Value.x <- as.numeric(FSVI_Calculated$Value.x)
+FSVI_Calculated$FSVI <- FSVI_Calculated$Value.x/FSVI_Calculated$Value.y
+FSVI_Calculated$Origin <-"Calculations"
+
+FSVI_Calculated <- melt(FSVI_Calculated, id = c("StartTime", "Origin"), measure.vars = c("FSVI"), variable.name = "Parameter", value.name = "Value")
+
+SVI_Combined <- rbind(SVI,FSVI_Calculated)
+SVI_Days <- SVI_Combined
+SVI_Days$StartTime <- trunc(SVI_Combined$StartTime, "days") %>%
+as.character() %>%
+as.factor() 
+SVI_Days <- subset(SVI_Days, Parameter %in% unique(SVI_Days$Parameter))
+SVI_Days$Value <- as.numeric(SVI_Days$Value)
+
+SVI_Days <- aggregate(Value~StartTime+Parameter, data = SVI_Days, FUN = "mean")
+
+SVI_Days$Origin <- "Mean"
+
+SVI_Days$StartTime <- strptime(SVI_Days$StartTime, format = c("%Y-%m-%d"))
+
+
+```
+
+
+```{r Effluent figure}
+DriftsDataDaysCombo <- rbind.data.frame(
+                                   Outlet_Days,
+                                  Egenkontrol_Days,
+                                    SVI_Days,
+                                  Sludge_Days,
+                                  N_Removal_Days,
+                                    COD_Removal_Days,
+                                    P_Removal_Days
+                                    )
+DriftsDataDaysCombo$StartTime <- as.POSIXct(DriftsDataDaysCombo$StartTime)
+
+
+
+DriftsDataDaysCombo$Parameter <- as.character(DriftsDataDaysCombo$Parameter)
+DriftsDataDaysCombo$Parameter[DriftsDataDaysCombo$Parameter == "NOE.outlet.NH4.mg.l"] <- "NH4"
+DriftsDataDaysCombo$Parameter[DriftsDataDaysCombo$Parameter == "NOE.outlet.NO3.mg.l"] <- "NO3"
+DriftsDataDaysCombo$Parameter[DriftsDataDaysCombo$Parameter == "NOE.outlet.TSS.mg.l"] <- "TSS_out"
+DriftsDataDaysCombo$Parameter[DriftsDataDaysCombo$Parameter == "PO4.afløb.renseanlæg.mg.l"] <- "PO4"
+
+
+subset <- subset(DriftsDataDaysCombo, Parameter %in% c("LT2_TS","FSVI", "PO4", "NH4", "NO3","TSS_out","N_tot","P_tot","COD","P_Removal", "N_Removal", "COD_Removal"))%>%subset(format.Date(StartTime, "%Y-%m-%d") >= "2016-01-01") %>%subset(Origin%in% c("Outlet","Process","Mean","Calculations")) 
+
+subset$Parameter[subset$Parameter == "LT2_TS"] <- "SS_tank"
+
+subset = cbind(subset, replicate(1,subset$Parameter))
+
+colnames(subset)[5] <- "Unit"
+subset$Unit <- as.character(subset$Unit)
+subset$Unit[subset$Unit == "FSVI"] <- "DSVI (ml/g)"
+subset$Unit[subset$Unit == "SS_tank"] <- "SS_tank (g/L)"
+subset$Unit[subset$Unit == "PO4"] <- "PO4_out (mg/L)"
+subset$Unit[subset$Unit == "NH4"] <- "NH4_out (mg/L)" 
+subset$Unit[subset$Unit == "NO3"] <- "NO3_out (mg/L)"
+subset$Unit[subset$Unit == "TSS_out"] <- "TSS_out (mg/L)"
+subset$Unit[subset$Unit == "N_tot"] <- "N_tot_out (mg/L)"
+subset$Unit[subset$Unit == "P_tot"] <- "P_tot_out (mg/L)"
+subset$Unit[subset$Unit == "COD"] <- "COD_out (mg/L)"
+
+subset$Unit = factor(subset$Unit, levels=c('COD_out (mg/L)','COD_Removal','N_tot_out (mg/L)','N_Removal',"NH4_out (mg/L)","NO3_out (mg/L)","P_tot_out (mg/L)", "P_Removal","PO4_out (mg/L)", "DSVI (ml/g)", "SS_tank (g/L)","TSS_out (mg/L)"))
+
+subset$StartTime <- as.Date(subset$StartTime, format = c("%Y-%m-%d"))
+
+subset$Days<- difftime(subset$StartTime ,"2017-04-20 ", units = c("days"))
+```
+
+### plot 
+```{r Effluent figure}
+# rename units
+subset$Unit <- as.character(subset$Unit)
+
+## effluent
+subset$Unit[subset$Unit == "NH4_out (mg/L)"] <- "NH4 effl (mg/L)"
+subset$Unit[subset$Unit == "NO3_out (mg/L)"] <- "NO3 effl (mg/L)"
+subset$Unit[subset$Unit == "PO4_out (mg/L)"] <- "PO4 effl (mg/L)"
+subset$Unit[subset$Unit == "COD_out (mg/L)"] <- "COD effl (mg/L)"
+subset$Unit[subset$Unit == "N_tot_out (mg/L)"] <- "tot N effl (mg/L)"
+subset$Unit[subset$Unit == "P_tot_out (mg/L)"] <- "tot P effl (mg/L)"
+subset$Unit[subset$Unit == "TSS_out (mg/L)"] <- "TSS effl (mg/L)"
+## process tank
+subset$Unit[subset$Unit == "DSVI (ml/g)"] <- "DSVI tank (ml/g)" 
+subset$Unit[subset$Unit == "SS_tank (g/L)"] <- "SS tank (g/L)"
+## removal
+subset$Unit[subset$Unit == "COD_Removal"] <- "COD removal"
+subset$Unit[subset$Unit == "N_Removal"] <- "N removal"
+subset$Unit[subset$Unit == "P_Removal"] <- "P removal"
+
+# sort with factor
+subset$Unit = factor(subset$Unit, levels=c("COD effl (mg/L)",
+                                           "PO4 effl (mg/L)",
+                                           "NO3 effl (mg/L)",
+                                           "NH4 effl (mg/L)",
+                                           "TSS effl (mg/L)",
+                                           "tot P effl (mg/L)",
+                                           "tot N effl (mg/L)",
+                                           "DSVI tank (ml/g)",
+                                           "SS tank (g/L)",
+                                           "COD removal",
+                                           "P removal",
+                                           "N removal"))
+
+#plot 
+
+fig1 <- ggplot(subset, aes(x = Days, y = Value)) +
+  geom_point(size = 1.8, alpha = 0.5) +
+    geom_line(size = 1.0, alpha = 0.2) +
+ 
+     theme(legend.position = "none",
+           panel.background = element_blank(),
+           legend.key = element_rect(fill="transparent"),
+           legend.text = element_text(size = 12, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 11, color = "black"), 
+           axis.text.x = element_text(size = 11, color = "black", hjust = 0.5, vjust = 0.5, angle = 90), 
+           axis.title.x  = element_text(size = 12, color = "black"),
+           axis.title.y  = element_text(size = 12, color = "black"),
+           
+           panel.grid.major = element_line(size = 0.2, linetype = 'solid', colour = "gray"),
+           panel.grid.minor = element_blank(),
+           strip.background = element_blank(),
+           panel.border = element_rect(colour = "black", fill = NA),
+           strip.text = element_text(size = 15, face = "bold", color = "black", hjust = 0)
+           ) +
+  
+  ylab("Value") +
+  facet_wrap(~Unit, ncol = 3, 
+             scales = "free_y", strip.position = "top") + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  scale_x_continuous(breaks=seq(-500,200,100)) +
+  expand_limits(y=c(0))+
+   guides(col = guide_legend(nrow = 1)) 
+
+ggsave(plot = fig1, "Figures/Fig.1.jpg", width = 13, height = 7)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.2-Effect of transplantation on the overall microbial communities in recipient and donor. 
+###Import filtered dataset
+```{r}
+#import ampvis format
+d_amp_filt <- readRDS('data_generated/d_amp_filt.rds')
+
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+
+##Fig.2A-NMDS
+
+```{r}
+as_amp <- amp_subset_samples(d_amp_filt, SampleType %in% "Activated Sludge")
+
+#add a column to the metadata for abbreviating donor and recipient
+as_amp$metadata$LabelNew[as_amp$metadata$Plants %in% "Donor" & as_amp$metadata$SampleType %in% "Activated Sludge"] <- "D-AS"
+as_amp$metadata$LabelNew[as_amp$metadata$Plants %in% "Recipient" & as_amp$metadata$SampleType %in% "Activated Sludge"] <- "R-AS"
+as_amp$metadata$LabelNew <- as.character(as_amp$metadata$LabelNew)
+
+#add a column to the metadata for AS samples groups (4)
+as_amp$metadata$SampleGroup[as_amp$metadata$Days < 0] <- "before"
+as_amp$metadata$SampleGroup[as_amp$metadata$Days <= 40 & as_amp$metadata$Days >= 0] <- "after-early"
+as_amp$metadata$SampleGroup[as_amp$metadata$Days <= 150 & as_amp$metadata$Days > 40] <- "after-intermediate"
+as_amp$metadata$SampleGroup[as_amp$metadata$Days > 150] <- "after-late"
+
+#add a column with seasons
+as_amp$metadata$Month <- format(as_amp$metadata$Date, "%B") #get month name from the dates
+
+as_amp$metadata$Season[as_amp$metadata$Month == "September" | as_amp$metadata$Month == "October" | as_amp$metadata$Month == "November"] <- "Fall"
+as_amp$metadata$Season[as_amp$metadata$Month == "December" | as_amp$metadata$Month == "January" | as_amp$metadata$Month == "February"] <- "Winter"
+as_amp$metadata$Season[as_amp$metadata$Month == "March" | as_amp$metadata$Month == "April" | as_amp$metadata$Month == "May"] <- "Spring"
+as_amp$metadata$Season[as_amp$metadata$Month == "June" | as_amp$metadata$Month == "July" | as_amp$metadata$Month == "August"] <- "Summer"
+
+###set order of colors for SampleGroup
+as_amp$metadata$SampleGroup <- factor(as_amp$metadata$SampleGroup, levels = c("before", "after-early", "after-intermediate", "after-late"))
+
+#plot
+nmds <- amp_ordinate(data = as_amp, 
+             distmeasure = "bray",             
+             type = "NMDS",
+             transform = "none",
+             sample_colorframe_label = "LabelNew",
+             sample_colorframe_label_size = 8,
+           sample_trajectory = "Days",
+             sample_shape_by = "Season",
+             sample_color_by = "SampleGroup",
+             sample_trajectory_group = "LabelNew",
+             sample_label_by = "Days_lable",
+             sample_point_size = 3,
+             sample_label_size = 5
+             ) +
+          theme(legend.position = "bottom",
+          legend.box="vertical", legend.margin=margin(),
+       
+           panel.background = element_blank(),
+           legend.text = element_text(size = 11, color = "black"),
+           legend.title = element_text(size = 13, face = "bold", color = "black"),
+           axis.text.y = element_text(size = 15, color = "black"), 
+           axis.text.x = element_text(angle = 0, size = 15, color = "black"), 
+           axis.title.y = element_text(size = 15, color = "black"),
+           axis.title.x = element_text(size = 15,  color = "black")
+           ) +  
+  
+  scale_colour_manual(values = c("before" = "black", 
+                                "after-early" = "blue",
+                     "after-intermediate" = "darkgreen",
+                     "after-late" = "red")) +
+
+  annotate("text", 
+           x = 0.15,
+           y = 0.20, label = "Transplantation", size = 6, 
+           #angle = 28, 
+           angle = 24, 
+           color = "black") +
+  geom_segment(aes(x = 0.28, y = 0.22, xend = 0.03, yend = 0.15),
+                  arrow = grid::arrow(length = unit(0.5, "cm")),
+                  colour = "black",
+               lineend = "round",
+               linejoin = "round",
+               size = 1)
+
+##modify size of Stress values on the plot:
+nmds[["layers"]][[2]][["aes_params"]][["size"]] <- 4.5
+
+#plot
+nmds
+```
+
+##Fig.2B-Cooman
+
+```{r}
+#import plot object from statistical analysis
+pCooman_data <- readRDS('data_generated/pCooman_data.rds')
+
+#Plot
+pCooman <- ggplot(pCooman_data$points, aes(f1, f2)) + 
+   geom_point(aes(colour = ID, shape = ID), size = 3) + 
+   geom_hline(yintercept = pCooman_data$lim1, linetype = "dashed", colour = "gray") + 
+   geom_vline(xintercept = pCooman_data$lim2, linetype = "dashed", colour = "gray") +
+   labs(x = "Full distance to model R-AS(before)",
+        y = "Full distance to model D-AS(before") +
+   theme_bw()+
+   theme(legend.position = "bottom",
+         legend.text = element_text(size = 11, color = "black"),
+         legend.title = element_text(size = 13, face = "bold", color = "black"),
+           axis.text.y = element_text(size = 15, color = "black"), 
+           axis.text.x = element_text(angle = 0, size = 15, color = "black"), 
+           axis.title.y = element_text(size = 15, color = "black"),
+           axis.title.x = element_text(size = 15,  color = "black")) +
+   scale_colour_manual(name = "SampleGroup", 
+                     values = c("black", "black", "blue", "darkgreen","red")) +
+   scale_shape_manual(name = "SampleGroup",
+                      values= c(3, 17, 16, 16, 16)) +
+   guides(colour=guide_legend(nrow=2,byrow=TRUE))
+
+pCooman
+```
+
+##combine figures
+```{r}
+fig2 <- ggarrange(nmds,
+               pCooman,
+               labels = c("A)", "B)"),
+                font.label = list(size = 22, color = "black", face = "bold", family = NULL),
+                ncol = 2,
+                nrow = 1,
+                align = "hv")
+
+
+ggsave("Figures/Fig.2-NMDS and Cooman.jpg", plot = fig2, width = 16, height = 8)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.3-Community richness and structure in activated sludge of donor and recipient before and after transplantation.
+###Import filtered dataset
+```{r}
+#import ampvis format
+d_amp_filt <- readRDS('data_generated/d_amp_filt.rds')
+
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+
+##Fig.3A-Venn
+
+```{r}
+#Subset for species in D-AS and R-AS that have abundance > 0.01% on average
+g <- d_long_filt
+
+##Add a column tag based on time of transplantation. The first 40 days of transplantation are exlcuded because that's when the quickest changes of community occour. From day 40 we identified a steady state.
+g$Group[g$Plants %in% "Donor" & g$SampleType %in% "AS" & g$Transplantation %in% "Before"] <- "D-AS before"
+
+g$Group[g$Plants %in% "Recipient" & g$SampleType %in% "AS" & g$Transplantation %in% "Before"] <- "R-AS before"
+
+g$Group[g$Plants %in% "Donor" & g$SampleType %in% "AS" & g$Transplantation %in% "After" & g$Days >= 40] <- "D-AS after"
+
+g$Group[g$Plants %in% "Recipient" & g$SampleType %in% "AS" & g$Transplantation %in% "After" & g$Days >= 40] <- "R-AS after"
+
+g2 <- subset(g, !is.na(Group)) #Remove rows that are not included in the groupings, these are samples not needed
+g2$Species_rename <- as.character(g2$Species_rename)
+
+##Calculate mean species abundance within Group-column
+g2_avg <- g2 %>% 
+  group_by(Group, Species_rename) %>% 
+  dplyr::summarise(rra_avg = mean(rra_sp)) %>% 
+  subset(., rra_avg > 0.01) %>% 
+  ungroup()
+
+###Check number of species in each group
+g2_avg %>% 
+  dplyr::group_by(Group) %>% 
+  distinct(Species_rename, .keep_all = T) %>% 
+  count()
+```
+
+```{r, prepare dataset for Venn}
+library(ggVennDiagram)
+
+# Prepare dataset
+## Before transplantation
+
+list_bef <- list(
+  `D-AS`  = as.character(unique(subset(g2_avg, Group %in% "D-AS before") %>% pull(Species_rename))),
+  `R-AS` = as.character(unique(subset(g2_avg, Group %in% "R-AS before") %>% pull(Species_rename)))
+)
+
+## After trabsplantation
+
+list_aft <- list(
+  `D-AS` = as.character(unique(subset(g2_avg, Group %in% "D-AS after") %>% pull(Species_rename))),
+  `R-AS` = as.character(unique(subset(g2_avg, Group %in% "R-AS after") %>% pull(Species_rename)))
+)
+
+## Show species counts in each part of Venn diagram
+process_region_data(Venn(list_bef))
+process_region_data(Venn(list_aft))
+
+```
+
+
+```{r, make Venn plots}
+#Make Venn plots
+
+## Before
+Venn_before2 <- Venn(list_bef)
+data_before <- process_data(Venn_before2)
+
+plotVB <- ggplot() +
+  geom_sf(aes(fill=count), data = venn_region(data_before)) +
+  geom_sf(size = 0.5, lty = "solid", color = "black", data = venn_setedge(data_before), show.legend = F) +
+  geom_sf_text(aes(label = name), fontface = "bold", size = 6,  data = venn_setlabel(data_before)) +
+  geom_sf_label(aes(label=count), size = 5, color = "black", data = venn_region(data_before)) +
+  theme_void() +
+  scale_fill_gradient(low="white",high = "red") +
+  labs(title = "Before",
+       subtitle = "-140 < days < 0") +
+   theme(plot.title = element_text(hjust=0.5, size = 20, face = "bold"),
+         plot.subtitle = element_text(hjust = 0.5, size = 15),
+         legend.position = "none")
+
+## After
+Venn_after2 <- Venn(list_aft)
+data_after <- process_data(Venn_after2)
+
+plotVA <- ggplot() +
+  geom_sf(aes(fill=count), data = venn_region(data_after)) +
+  geom_sf(size = 0.5, lty = "solid", color = "black", data = venn_setedge(data_after), show.legend = F) +
+  geom_sf_text(aes(label = name), fontface = "bold", size = 6,  data = venn_setlabel(data_after)) +
+  geom_sf_label(aes(label=count), size = 5, color = "black", data = venn_region(data_after)) +
+  theme_void() +
+  scale_fill_gradient(low="white",high = "red") +
+  labs(title = "After",
+       subtitle = "40 < days < 203") +
+   theme(plot.title = element_text(hjust=0.5, size = 20, face = "bold"),
+         plot.subtitle = element_text(hjust = 0.5, size = 15),
+         legend.position = "none")
+
+#combine plots together
+library(ggpubr)
+
+pVenn <- ggarrange(plotVB + rremove("legend"),
+               plotVA + rremove("legend"),
+               ncol = 2,
+          nrow = 1,
+          align = "hv"
+)
+
+annotate_figure(pVenn, 
+                fig.lab = "A)",
+                fig.lab.pos = "top.left",
+                fig.lab.size = 20,
+                fig.lab.face = "bold") 
+
+#ggsave("Figures/Fig.3A-Venn.jpg", plot = pVenn, height = 3, width = 13)
+```
+### extract species names from Venn plot
+
+```{r}
+#extracting species name
+
+## Before
+class(data_before)
+data_before2 <- list(data_before)
+
+ASD_beforeunique <- data_before2[[1]]@region$item[[1]]
+ASR_beforeunique <- data_before2[[1]]@region$item[[2]]
+beforecommon <- data_before2[[1]]@region$item[[3]]
+
+## After
+class(data_after)
+data_after2 <- list(data_after)
+
+ASD_afterunique <- data_after2[[1]]@region$item[[1]]
+ASR_afterunique <- data_after2[[1]]@region$item[[2]]
+aftercommon <- data_after2[[1]]@region$item[[3]]
+
+#combine the vectors into a data frame to export
+df1 <- ASD_afterunique %>% 
+  as.data.frame() %>% 
+mutate(VennGroup = "ASD_after_unique")
+df2 <- ASD_beforeunique %>% 
+  as.data.frame() %>% 
+mutate(VennGroup = "ASD_before_unique")
+df3 <- ASR_beforeunique %>% 
+  as.data.frame() %>% 
+mutate(VennGroup = "ASR_before_unique")
+df4 <- ASR_afterunique %>% 
+  as.data.frame() %>% 
+mutate(VennGroup = "ASR_after_unique")
+df5 <- beforecommon %>% 
+  as.data.frame() %>% 
+mutate(VennGroup = "NA_before_shared")
+df6 <- aftercommon %>% 
+  as.data.frame() %>% 
+mutate(VennGroup = "NA_after_shared")
+
+
+df_venn <- bind_rows(df1, df2, df3, df4, df5, df6)
+
+#add useful columns
+df_venn <- df_venn %>% 
+  mutate(VennGroup2 = paste(VennGroup)) %>% 
+  separate(VennGroup2, into = c("Plants", "Transplantation", "SpeciesVenn")) 
+colnames(df_venn)[1] <- "Species_rename"
+```
+
+### export Venn species
+```{r}
+openxlsx::write.xlsx(df_venn, "data_generated/df_venn.xlsx", row.names = F)
+```
+
+##Fig.3B-Hm horizontal
+
+```{r}
+#Generate heatmap of R-AS and D-AS before transplantation
+
+##select AS samples before transplantation
+hm_bef <- amp_subset_samples(d_amp_filt, SampleType %in% "Activated Sludge" & Transplantation %in% "Before",
+                            normalise = F) 
+
+##Before transplantation: generate the heatmap of R-AS and D-AS and sort it by species abundance in R-AS
+textmap1 <- amp_heatmap(hm_bef,
+            group_by = c("Plants"),
+            normalise = F,
+            tax_aggregate = "Genus",
+            sort_by = "Recipient",
+            tax_show = 30,
+            color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 5,
+            textmap = T) 
+
+top30gen1 <- rownames(textmap1)
+
+
+plottest1 <- amp_heatmap(hm_bef,
+            group_by = c("Plants"),
+            tax_aggregate = "Genus",
+            normalise = F,
+            sort_by = "Recipient",
+            tax_show = top30gen1,
+            color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 5) +
+   theme(legend.position = "none",
+           legend.text = element_text(size = 18, face = "bold", color = "black"),
+           legend.title = element_text(size = 18, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 18, face = "bold", color = "black")
+           )
+
+head(plottest1$data)
+unique(plottest1$data[,1])
+plottest1$data[,1] <- as.character(plottest1$data[,1]) 
+plottest1$data[,1] <- factor(plottest1$data[,1], levels = top30gen1)
+
+hm_bef1b <-  plottest1 +
+    coord_flip() +
+    labs(title = "Before",
+           subtitle = "-140 < days < 0") +
+    theme(legend.position = "none",
+           legend.text = element_text(size = 18, face = "bold", color = "black"),
+           legend.title = element_text(size = 18, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 18, face = "bold", color = "black"),
+          title = element_text(size = 18, face = "bold"),
+           plot.subtitle = element_text(size = 15, face = NULL)
+           ) +
+    scale_x_discrete(labels=c("Recipient" = "R-AS",
+                            "Donor" = "D-AS"))
+
+#Generate heatmap of R-AS and D-AS after transplantation
+
+##Select AS samples after transplantation, excluding the early stage after transplantation
+hm_aft <- amp_subset_samples(d_amp_filt, SampleType %in% "Activated Sludge" & Days >= 40,
+                             normalise = F) 
+
+##After transplantation: generate the heatmap of R-AS and D-AS and sort it by species abundance in R-AS
+textmap2 <- amp_heatmap(hm_aft,
+            group_by = c("Plants"),
+            normalise = F,
+            tax_aggregate = "Genus",
+            sort_by = "Recipient",
+            tax_show = 30,
+            color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 5,
+            textmap = T) 
+
+top30gen2 <- rownames(textmap2)
+
+
+plottest2 <- amp_heatmap(hm_aft,
+            group_by = c("Plants"),
+            tax_aggregate = "Genus",
+            normalise = F,
+            sort_by = "Recipient",
+            tax_show = top30gen2,
+            color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 5) +
+   theme(legend.position = "none",
+           legend.text = element_text(size = 18, face = "bold", color = "black"),
+           legend.title = element_text(size = 18, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 18, face = "bold", color = "black")
+           )
+
+head(plottest2$data)
+unique(plottest2$data[,1])
+plottest2$data[,1] <- as.character(plottest2$data[,1]) 
+plottest2$data[,1] <- factor(plottest2$data[,1], levels = top30gen2)
+
+hm_aft1b <-  plottest2 +
+  coord_flip() +
+    labs(title = "After",
+           subtitle = "40 < days < 203") +
+    theme(legend.position = "none",
+           legend.text = element_text(size = 18, face = "bold", color = "black"),
+           legend.title = element_text(size = 18, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 18, face = "bold", color = "black"),
+          title = element_text(size = 18, face = "bold"),
+            plot.subtitle = element_text(size = 15, face = NULL)
+           ) +
+  scale_x_discrete(labels=c("Recipient" = "R-AS",
+                            "Donor" = "D-AS"))
+
+
+#Combine heatmap before and after transplantation
+library(ggpubr)
+
+pHM_hor <- ggarrange(NULL, hm_bef1b, hm_aft1b,
+                ncol = 1,
+                nrow = 3,
+                heights = c(0.1, 1.2, 1))
+```
+
+
+##combine figures
+```{r}
+fig3 <- ggarrange(pVenn,
+               pHM_hor,
+               labels = c("A)", "B)"),
+                 font.label = list(size = 25, color = "black", face = "bold", family = NULL),
+                ncol = 1,
+                nrow = 2,
+                align = "hv",
+              heights = c(0.8, 1.5))
+
+ggsave("Figures/Fig.3-Venn and Horiz Heatmap.jpg", plot = fig3, width = 16, height = 13)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.4-Removal in R-AS of added unique and abundant species of D-AS.
+###Import filtered dataset
+```{r}
+#import ampvis format
+d_amp_filt <- readRDS('data_generated/d_amp_filt.rds')
+
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+###Subset
+```{r}
+# Subset samples and select recipient AS after transplantation
+recafter <- subset(d_long_filt, Plants %in% "Recipient" & SampleType %in% "AS" & Transplantation %in% "After")
+
+# Subset unique species of donore added to recipient after transplantation
+
+## import dataframe from Venn
+df_venn <- readxl::read_excel("~/R/Immigration/Transplantation/paper_codes/data_generated/df_venn.xlsx")
+
+### select unique species of donor present before transplantation
+ASD_before_unique <- subset(df_venn, VennGroup %in% "ASD_before_unique") #the dataset from Venn is based on species abundance on average > 0.01%. 
+
+# Subset Donor AS samples before transplantation and the unique species present therein 
+don <- subset(d_long_filt, Plants %in% "Donor" & SampleType %in% "AS" & Transplantation %in% "Before")
+don2 <- subset(don, Species_rename %in% ASD_before_unique$Species_rename)
+
+don3_ab <- don2 %>% 
+  group_by(Species_rename) %>% 
+   summarise(rra_avg = mean(rra_sp)) %>% 
+  filter(rra_avg >= 0.1) #Filter species with abundance > 0.1%, that is the most abundant ones.
+
+# Subset unique species of donor added species from recipient after (49 species)
+recafter_added <- subset(recafter, Species_rename %in% don3_ab$Species_rename)
+
+## Arrange by species
+recafter_added <- recafter_added %>% 
+  arrange(Species_rename, Days)
+
+## Subset only needed column
+recafter_added2 <- recafter_added %>% 
+  dplyr::select(Species_rename, Days, rra_sp) %>% 
+  unique()
+```
+
+##Check time-series 
+time-series of these 49 unique species in donor added to recipient
+```{r}
+ggplot(recafter_added2, aes(x = Days, y = rra_sp, color=Species_rename)) + 
+  geom_point(size=3) +
+  geom_line(size=1)+
+
+     theme(legend.position = "none",
+           panel.background = element_blank(),
+           axis.line.x = element_line(color = "black"),
+           axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 18, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 12, color = "black"), 
+           axis.text.x = element_text(size = 12, color = "black", angle = 90, vjust = 0.5), 
+           axis.title.x = element_text(size = 15, color = "black"),
+           axis.title.y = element_text(size = 15, color = "black"),
+           strip.text = element_text(size = 18, face = "bold", color = "black"),
+          plot.title = element_text(size=20, face = "bold"),
+           ) +
+  facet_wrap(~ Species_rename, scales = "free")+
+  xlab("Days") + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  ylab("Relative read abundance [%]") + 
+  scale_x_continuous(breaks=seq(-140,220,40)) 
+```
+
+##Model: first order kinetic
+
+Apply the firs-order kinetic model to each of the 49 species. 
+The aim is to find kmodel that minimizes the SSE
+
+```{r}
+added <- recafter_added2 #backup dataset
+
+res <- list() #empty list that will be filled-in by models from every species in the loop
+
+for(i in unique(added$Species_rename)) {
+  
+  subset <- subset(added, Species_rename %in% i)
+  
+#define equations:
+eq <- function(rra_sp, k){min(subset$rra_sp) + max(subset$rra_sp) * exp(-(k*(subset$Days-0)))} #first order kinetic equation
+SSE <- function(k){ sum((subset$rra_sp - eq(subset$rra_sp, k))^2) } #sum of squared errors (i.e. minimum squares)
+
+#calculate model
+  res[[i]] <- nlm(SSE, p = 0.05) #non-linear minimisation; using 0.05 (a more realist parameter) we can increase the chances for the model to find a better fit
+}
+
+#export list of results in a dataframe
+library(purrr)
+library(data.table)
+res2 <- rbindlist(res, fill = TRUE, idcol = T) %>% 
+  select(.id, 
+         minimum, #minimum of SSE that minimise the function
+         estimate # k = 1/SRT; value of k that makes the minimised function
+         )
+
+#calculate SRT based on k (=estimate)
+res2 <- res2 %>% 
+  mutate(SRT = 1/estimate) %>% 
+  rename(Species_rename = .id) %>% 
+  rename(kmodel = estimate) %>% 
+  rename(jmin = minimum)
+
+#join model results with data
+dm <- merge(added, res2, by = "Species_rename")
+```
+
+##Goodness of fit 
+Evaluating the goodness of fit by by pearson correlation between data and model-fitted data, 
+
+```{r}
+#calculte fitted-data using parameters of model and model equation
+dm2 <- dm %>% 
+  group_by(Species_rename) %>% 
+  mutate(fitted_sp = min(rra_sp) + max(rra_sp)*exp(-kmodel*(Days -0)))
+
+#calculate pearson correlation in a loop
+corr <- list() #create list where to store the linear correlation coefficiente 
+plot3 <- list() #create an object that stores ggplots
+
+for(i in unique(dm2$Species_rename)) {
+  
+  #subset each species from dataframe with data and model parameters 
+  subset <- subset(dm2, Species_rename %in% i)
+  
+  #define funtions for quality check of fit
+  corr[[i]] <-  cor.test(subset$rra_sp, subset$fitted_sp, method = "pearson") #linear correlation between data and model
+
+#define functions for plotting
+firstorderfit <- function(Days, kmodel, xmin, xmax) {
+  x = xmin + xmax*exp(-kmodel*(Days -0))
+}
+
+subset_model <- firstorderfit(Days = subset$Days, 
+                             kmodel = subset$kmodel,
+                             xmin = min(subset$rra_sp),
+                             xmax = max(subset$rra_sp))
+subset_fit <- data.frame(Days = subset$Days,
+                        rra_sp = subset$rra_sp,
+                        fitted_sp = subset_model,
+                        Corr = paste0(corr[[i]]["estimate"]$estimate),
+                        Corr_p = paste0(corr[[i]]["p.value"]),
+                        SpRemovalRate = as.numeric(paste0(subset$SRT)))
+
+
+plot3[[i]] <-  ggplot(subset_fit) +
+  geom_point(aes(x = Days, y = rra_sp)) +
+  geom_line(aes(x = Days, y = fitted_sp)) +
+  labs(title = paste0("",i,""),
+       subtitle = paste0("Corr=", subset_fit$Corr, "; ", "p-value=", subset_fit$Corr_p, "; ", "SRT=", subset_fit$SpRemovalRate))
+
+#print(plot3[[i]])
+
+}
+
+#extract correlation results
+corr_df <- rbindlist(corr, fill = TRUE, idcol = T) %>% 
+  dplyr::select(`.id`, 
+         estimate, # corr coefficient
+         `p.value`
+         ) %>% 
+  unique()
+
+#calculate SRT (species residence time) based on k (=estimate)
+corr_df2 <- corr_df %>% 
+  rename(Species_rename = .id) %>% 
+  rename(corr_coeff = estimate) %>% 
+  mutate_at(2, round, 3) %>% 
+mutate_at(3, round, 3)
+
+#join model results with data
+dm4 <- merge(dm2, corr_df2, by = "Species_rename")
+
+#add useful columns for plots
+dm4$CorrPar <- paste0("Corr=", dm4$corr_coeff, "; ", "p-value=", dm4$p.value)
+dm4$SRT2 <- paste0("SRT=", round(dm4$SRT, digits = 1))
+```
+
+##Merge dataset and model
+Merge dataset with model and goodness of fit parameters
+```{r}
+#merge
+dm4 <- merge(recafter_added, dm4, by = c("Species_rename", "Days", "rra_sp"))
+
+#plot data vs. model
+ggplot(dm4) +
+  geom_point(aes(x = Days, y = rra_sp)) +
+  geom_line(aes(x = Days, y = fitted_sp)) +
+  facet_wrap(~Species_rename2 + CorrPar + round(SRT, digits = 2), scales = "free_y")
+```
+
+##Group species
+
+Species are grouped into 3 different groups based on:
+- significance of p-value, first
+- on SRT threshold, then
+
+####grouping-1
+```{r}
+#make groups based on significance of p-value
+dm4$Case[dm4$p.value <= 0.01] <- "good"
+dm4$Case[dm4$p.value > 0.01] <- "bad"
+
+## Visualize grouping based on p-value significance
+ggplot(dm4) +
+  geom_point(aes(x = Days, y = rra_sp)) +
+  geom_line(aes(x = Days, y = fitted_sp)) +
+  facet_wrap(~Case + Species_rename + CorrPar + SRT2, scales = "free_y")
+
+## Check distribution of SRT for species with significant correlation dataset-model
+dm4_srt_good <- dm4 %>% 
+  filter(Case %in% "good") %>% 
+  dplyr::select(Species_rename, SRT) %>% 
+  unique()
+
+ggplot(dm4_srt_good, aes(x = SRT)) +
+  geom_histogram(aes(y = ..density..), 
+                 binwidth = 3, colour = "black", fill = "white") +
+  geom_density(alpha = .3, fill="#FF6655") + 
+  scale_x_continuous(breaks=seq(0,200,10)) +
+    geom_vline(xintercept = 50, linetype = "longdash", color = "red", size = 1) +
+   xlab("SRT") +
+    theme_bw() 
+
+```
+
+
+```{r}
+# Merge model info with dataset containing sampling points before transplantation
+
+## subset the sampling points before transplantation
+rec <- subset(d_long_filt, Plants %in% "Recipient" & SampleType %in% "AS" & Species_rename %in% unique(dm4$Species_rename))
+
+rec_added <- merge(rec, dm4, 
+                 #  c("SampleID", "Plants", "Days", "rra_sp", "Transplantation", "Date", "Genus", "Species_rename"), 
+                   all.x = T)
+
+unique(rec_added$Species_rename) #check that the unique species are present in the merged dataset
+
+#renaming
+dm5 <- rec_added
+```
+
+####grouping-2
+```{r}
+
+#Group species based on SRT threshold
+dm5$Trend[dm5$Case %in% "good" & dm5$SRT < 50] <- "Low"
+dm5$Trend[dm5$Case %in% "good" & dm5$SRT > 50] <- "High"
+dm5$Trend[dm5$Case %in% "bad" & dm5$SRT < 50] <- "veryLow"
+dm5$Trend[dm5$Case %in% "bad" & dm5$SRT > 50] <- "veryHigh"
+
+## Visualize the species with the new grouping
+ggplot(dm5, aes(group = Species_rename, color = Species_rename)) +
+  geom_point(aes(x = Days, y = rra_sp)) +
+  geom_line(aes(x = Days, y = rra_sp)) +
+  facet_wrap(~Trend, scales = "free_y") +
+  theme(legend.position = "none") 
+
+# Calculate average SRT for Low and High species (both significant)
+dm5 %>% 
+  filter(Trend %in% c("Low", "High")) %>% 
+  summarise(mean_SRT = mean(SRT),
+            sd_SRT = sd(SRT))
+
+dm5 %>% 
+  dplyr::select(Species_rename, corr_coeff, p.value) %>% 
+  unique() %>% 
+  drop_na() #the rows with corr_coeff = NA and p.value = NA corresponds to the samples before transplantation
+
+#count number of Low+Medium compared to total
+nLowHigh <- dm5 %>% 
+  filter(Trend %in% c("Low", "High")) %>% 
+  dplyr::select(Species_rename) %>% 
+  unique() %>% 
+  nrow()
+
+nTot <- dm5 %>% 
+  dplyr::select(Species_rename) %>% 
+  unique() %>% 
+  nrow()
+
+nLowHigh/nTot * 100
+```
+
+####grouping-3
+grouping back
+```{r}
+dm5$SpResTime[dm5$Trend %in% "Low"] <- "Low"
+dm5$SpResTime[dm5$Trend %in% "High"] <- "Medium"
+dm5$SpResTime[dm5$Trend %in% "veryLow" | dm5$Trend %in% "veryHigh"] <- "High"
+
+dm5$SpResTime <- factor(dm5$SpResTime, levels = c("Low", "Medium", "High"))
+
+#Visualize new grouping by species
+
+## Low residence species
+dm5 %>% 
+  filter(SpResTime %in% "Low") %>% 
+ggplot(., aes(group = Species_rename, color = Species_rename)) +
+  geom_point(aes(x = Days, y = rra_sp)) +
+  geom_line(aes(x = Days, y = rra_sp)) +
+  labs(title = "Low Residence Time") +
+  facet_wrap(~Species_rename2, scales = "free_y", labeller = label_wrap_gen(width=3)) +
+  theme(legend.position = "none")
+
+## Medium residence species
+dm5 %>% 
+  filter(SpResTime %in% "Medium") %>% 
+ggplot(., aes(group = Species_rename, color = Species_rename)) +
+  geom_point(aes(x = Days, y = rra_sp)) +
+  geom_line(aes(x = Days, y = rra_sp)) +
+  labs(title = "Medium Residence Time") +
+  facet_wrap(~Species_rename2, scales = "free_y", labeller = label_wrap_gen(width=3)) +
+  theme(legend.position = "none") 
+
+## High residence species
+dm5 %>% 
+  filter(SpResTime %in% "High") %>% 
+ggplot(., aes(group = Species_rename, color = Species_rename)) +
+  geom_point(aes(x = Days, y = rra_sp)) +
+  geom_line(aes(x = Days, y = rra_sp)) +
+  labs(title = "High Residence Time") +
+  facet_wrap(~Species_rename2, scales = "free_y", labeller = label_wrap_gen(width=3)) +
+  theme(legend.position = "none") 
+```
+
+####Subset top 5 by group
+```{r}
+high_top5 <- dm5 %>% 
+  filter(Days %in% 1 & SpResTime %in% "Low") %>% 
+  arrange(desc(rra_sp)) %>% 
+  head(., 5) %>% 
+  pull(Species_rename2) %>% 
+  as.character()
+
+med_top5 <- dm5 %>% 
+  filter(Days %in% 1 & SpResTime %in% "Medium") %>% 
+  arrange(desc(rra_sp)) %>% 
+  head(., 5) %>% 
+  pull(Species_rename2) %>% 
+    as.character()
+
+low_top5 <- dm5 %>% 
+  filter(Days %in% 1 & SpResTime %in% "High") %>% 
+  arrange(desc(rra_sp)) %>% 
+  head(., 5) %>% 
+  pull(Species_rename2) %>% 
+    as.character()
+
+dm6 <- subset(dm5, Species_rename2 %in% c(high_top5, med_top5, low_top5))
+dm6$Species_rename2 <- factor(dm6$Species_rename2, levels = c(high_top5, med_top5, low_top5))
+
+#subset the list of 5 species and their relative SpResTime column from the main dataset
+rec2 <- subset(d_long_filt, Plants %in% "Recipient" & SampleType %in% "AS" & Species_rename2 %in% unique(dm6$Species_rename2))
+
+dm6_sub <- dm6 %>% 
+  select(Species_rename, Species_rename2, SpResTime) %>% 
+  unique() %>% 
+  drop_na()#the rows with SpResTime = NA corresponds to samples before transplantation
+
+rec_added2 <- merge(dm6_sub, rec2,
+                    #c("Species_rename"), 
+                   all.x = T)
+```
+
+####Plot
+```{r}
+rec_added2$SpResTime <- factor(rec_added2$SpResTime, levels = c("Low", "Medium", "High"))
+
+#create a vector woth colors
+colpal <- c("#FECC5C","#FD8D3C","#F03B20","#BD0026",  "darkred", #reds
+           "#BDD7E7",  "#6BAED6",  "#3182BD", "#08519C", "navy",  #blues
+           "#BAE4B3", "#74C476", "#31A354", "#006D2C", "darkolivegreen" #greens
+                                   )
+
+fig4 <- ggplot(rec_added2, aes(x = Days, y = rra_sp, color=Species_rename2)) + 
+        geom_point(size=3) +
+        geom_line(size=1)+
+           theme(legend.position = "bottom",
+                 panel.background = element_blank(),
+                 axis.line.x = element_line(color = "black"),
+                 axis.line.y = element_line(color = "black"),
+                 legend.text = element_text(size = 13, color = "black"),
+                 legend.title = element_blank(),
+                 axis.text.y = element_text(size = 13, color = "black"), 
+                 axis.text.x = element_text(size = 13, angle = 0, vjust = 0.5, color = "black"), 
+                 axis.title.x = element_text(size = 15, color = "black"),
+                 axis.title.y = element_text(size = 15,color = "black"),
+                 strip.text = element_text(size = 18, face = "bold", color = "black"),
+                 plot.title = element_text(size=25),
+                 plot.subtitle = element_text(size = 20)
+                 ) +
+        facet_wrap(~SpResTime, scales = "free_y", ncol = 3)+
+        xlab("Days") + 
+        geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+        ylab("Relative read abundance [%]") + 
+        scale_x_continuous(breaks=seq(-140,220,40)) +
+        guides(color = guide_legend(ncol = 3)) +
+      scale_colour_manual(values = rev(colpal), drop = F)
+
+#ggsave("Figures/Fig.4-Removal of added species.jpg", plot = fig4, width = 15, height = 5)
+```
+
+####export Tab.S3
+
+
+```{r}
+tab_temp <- dm5 %>% 
+  filter(Transplantation %in% "After") %>% #filter only species after transplantation, otherwise some are also present before transplantation but all modeling columns are present, and this retuns a table with >49 rows
+dplyr::select(Genus, Genus2, Species_rename2, -Transplantation, corr_coeff, p.value, SRT, SpResTime) 
+
+tab_temp2 <- tab_temp %>%
+  mutate(Species_rename3 = paste(Species_rename2)) %>% 
+  tidyr::separate(Species_rename3, c("GenFam", "Species"), sep = " ")
+
+## Extract Genus vector to subset the taxonomy table for Family names
+gen_target <- tab_temp2$Genus 
+gen_target[gen_target == ""] <- NA
+gen_target <- subset(gen_target, !is.na(gen_target))
+
+## Subset family names from genus
+taxname <- d_amp_filt$tax #get Taxonomy table
+rownames(taxname) <- NULL
+
+FamGen <- taxname %>%  
+  subset(., Genus %in% gen_target) %>%  #subset Family based on Genus
+  select(Family, Genus) %>% 
+  unique() %>% 
+  drop_na()
+
+# Append family name to the tab dataset
+tab_temp3 <- left_join(tab_temp2, FamGen, by = "Genus")
+
+## Adjust family name of unclassified species
+tab_temp3$Family[tab_temp3$Species_rename2 == "midas_f_67 ASV4016"] <- "midas_f_67"
+tab_temp3$Family[tab_temp3$Species_rename2 == "Rhodobacteraceae ASV609"] <- "Rhodobacteraceae"
+tab_temp3$Family <- gsub("f__", "", tab_temp3$Family)
+
+## Adjust family name of unclassified species
+tab_temp3$Genus2[tab_temp3$Species_rename2 == "midas_g_19 ASV49"] <- "midas_g_19"
+tab_temp3$Genus2[tab_temp3$Species_rename2 == "Dietzia ASV97"] <- "Dietzia"
+tab_temp3$Genus2[tab_temp3$Genus2 == ""] <- NA
+
+#shuffle, select and rename columns to export
+tab2 <- tab_temp3 %>% 
+  select(Family, Genus2, Species_rename2, corr_coeff, p.value, SRT, SpResTime) %>% 
+  rename(Genus = Genus2) %>% 
+  rename(Species = Species_rename2) %>% 
+  rename(`R` = corr_coeff) %>% 
+  rename(`p-value` = p.value) %>% 
+  rename(`Species Residence Time` = SRT) %>% 
+  rename(Group = SpResTime)
+
+#Round columns with numbers
+tab2 <- tab2 %>% 
+  mutate_at(4, round, 2) %>% 
+  mutate_at(5, round, 2) %>% 
+  mutate_at(6, round, 1)
+
+#Sort table
+tab2 <- tab2 %>% arrange(Group, `Species Residence Time`) %>% unique()
+
+```
+export
+```{r}
+#export
+#openxlsx::write.xlsx(tab2, "data_generated/Table S3.xlsx", sep = "\t", row.names = F, showNA=T)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.5-Heatmap of shared species within guilds.
+
+## Import filtered dataset
+```{r}
+#import ampvis format
+d_amp_filt <- readRDS('data_generated/d_amp_filt.rds')
+
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+## Import venn-diagram species
+```{r}
+#import dataframe from Venn to get shared species before
+df_venn <- readxl::read_excel("data_generated/df_venn.xlsx")
+
+#subset for species shared in D-AS and R-AS before transplantation (528 species)
+sb <- subset(df_venn, VennGroup %in% "NA_before_shared") 
+
+## Subset shared species from long format dataset
+shared <- subset(d_long_filt, SampleType %in% "AS" & Species_rename %in% sb$Species_rename)
+#unique(shared$Species_rename) #check that total number of subsetted species is 528
+```
+
+## Import guilds
+```{r}
+guilds <- readxl::read_excel("data_raw/functional guilds MiDAS3.6.xlsx")
+
+# Data wrangling of guilds names
+
+guilds <- guilds %>% 
+  drop_na() %>% 
+   subset(., !Guild %in% "potential filament in WWTP") #not important
+
+guilds_gendf <- guilds %>% 
+  filter(!`New name`%in% c("midas_s_328", "Ca_Defluviicoccus_seviourii")) %>% #exclude guilds species
+  rename(Genus = `New name`)
+guilds_gendf$Genus <- paste0("g__", guilds_gendf$Genus) #46 genera
+guilds_gen <- guilds_gendf$Genus
+
+guilds_spdf <- guilds %>% 
+  filter(`New name`%in% c("midas_s_328", "Ca_Defluviicoccus_seviourii")) %>% #include guilds species
+  rename(Species_rename = `New name`)
+guilds_spdf$Species_rename <- paste0("s__", guilds_spdf$Species_rename) #2 species
+guilds_sp <- guilds_spdf$Species_rename
+```
+
+##Subsets
+```{r}
+# Subset species belonging to guilds from long format dataset
+guilds_sub <- subset(d_long_filt, SampleType %in% "AS" & (Genus %in% guilds_gen | Species_rename %in% guilds_sp))
+unique(guilds_sub$Genus)
+
+#does d_long_filt contain all genera in guilds_gen and species in guilds_sp?
+#setdiff(guilds_gen, unique(guilds_sub$Genus)) #These are genera belonging to guilds which are not present at al in the long format dataset
+
+## Stats of guilds: number of species belonging to guilds present in D-AS and R-AS before transplantation with average abundance >= 0.01%
+guilds_sub %>% 
+  filter(Transplantation %in% "Before") %>% 
+  group_by(Plants, SampleType, Transplantation, Species_rename) %>% 
+  summarise(count_avg = mean(rra_sp)) %>% 
+  filter(count_avg >= 0.01) %>% 
+  ungroup() %>% 
+  filter(Transplantation %in% "Before") %>% 
+  group_by(Plants, SampleType) %>% 
+  distinct(Species_rename, .keep_all = T) %>% 
+  count()
+
+# Subset shared species in D-AS and R-AS before transplantation from guilds 
+guilds_shared <- subset(guilds_sub, Species_rename %in% unique(shared$Species_rename))
+unique(guilds_shared$Species_rename) #(53 species)
+
+## attach guild tag to the shared guilds before transplantation, by merging with guild genus dataset
+guilds_shared2 <- merge(guilds_shared, guilds_gendf, by = "Genus") #merge with genus
+unique(guilds_shared2$Species_rename)
+
+## Stats: check nr of species in each genera of each guild
+guilds_shared2 %>%
+  group_by(Guild, Genus) %>%
+  distinct(Species_rename, .keep_all = T) %>%
+  summarise(nrofspecies = n())
+
+## Stats: check nr of species in each guild
+guilds_shared2 %>%
+  group_by(Guild) %>%
+  distinct(Species_rename, .keep_all = T) %>%
+  summarise(nrofspecies = n())
+
+## Prepare a vector with species name to subset from the ampvis format dataset which will be used to make the heatmap. The format is:
+### for classified species: "s__" followed by the name of species, e.g. "s__Ca_Accumulibacter_phosphatis"
+### for unclassified species "ASVXX", e.g. "ASV154"
+guilds_shared2$Species_rename <- as.character(guilds_shared2$Species_rename)
+
+guilds_shared2 <- guilds_shared2 %>% 
+  mutate(Species_renameA = ifelse(grepl("ASV", guilds_shared2$Species_rename, fixed = F),
+                                 gsub("^.*_", "", guilds_shared2$Species_rename),
+                                  paste(guilds_shared2$Species_rename)))
+
+# Subset 53 species belonging to guilds before transplantation from ampvis format dataset
+d_sub <- amp_subset_samples(d_amp_filt, Transplantation %in% "Before" & SampleType %in% "Activated Sludge") %>%
+    amp_subset_taxa(.,  tax_vector = unique(guilds_shared2$Species_renameA))
+
+## Prepare a vector for sorting the heatmap with species name
+###Since the vector contains classifieds and unclassified species, in order to be applied to an heatmap in ampvis it has to be in this form:
+###- classified species, without "s__", e.g.: "midas_s_5";
+###- unclassified species, with double underscore before the genus name ("g__") and with just one underscore before the ASv names ("_ASVX"), e.g.: "g__Nitrospira_ASVX"
+
+guilds_shared2 <- guilds_shared2 %>%
+  mutate(Species_renameB = paste(Species_rename))
+
+### remove s__ from classified species name
+guilds_shared2$Species_renameB <- ifelse(!grepl("ASV", guilds_shared2$Species_renameB, fixed = F),
+                             gsub("s__", "", guilds_shared2$Species_renameB),
+                             paste0(guilds_shared2$Species_renameB))
+
+### remove double underscore before ASV (substitute it with just one)
+guilds_shared2$Species_renameB <- ifelse(grepl("__ASV", guilds_shared2$Species_renameB, fixed = F),
+                             gsub("__ASV", "_ASV", guilds_shared2$Species_renameB),
+                             paste0(guilds_shared2$Species_renameB))
+
+### paste Genus and Species column together
+guilds_shared2$GenSp <- ifelse(!grepl("ASV", guilds_shared2$Species_renameB, fixed = F),
+                               paste(guilds_shared2$Genus2, guilds_shared2$Species_renameB, sep = "; "),
+                               paste(guilds_shared2$Taxa, guilds_shared2$Species_renameB, sep = "; ")
+                               )
+```
+
+
+###Extract and sort heatmap dataframe
+
+```{r}
+# Add a new column to use for the faceting of the heatmap 
+d_sub$metadata$PlantSampleType[d_sub$metadata$Plants %in% "Recipient" & d_sub$metadata$SampleType %in% "Activated Sludge"] <- "R-AS"
+d_sub$metadata$PlantSampleType[d_sub$metadata$Plants %in% "Donor" & d_sub$metadata$SampleType %in% "Activated Sludge"] <- "D-AS"
+d_sub$metadata$PlantSampleType <- factor(d_sub$metadata$PlantSampleType, levels = c("D-AS", "R-AS"))
+
+# Make heatmap with all 53 species and sort species in each guild by abundance in donor
+pt <- amp_heatmap(d_sub,
+            group_by = c("Transplantation"),
+            tax_aggregate = "Species",
+            tax_add = "Genus",
+            tax_show = 70, #set to a number > 53 species (target)
+            facet_by = "PlantSampleType",
+            color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 4,
+            round = 2,
+           normalise = F)  
+
+
+# Adjust heatmap dataframe for sorting:
+## Select only needed columns
+hm_guilds <- pt$data
+hm_guilds2 <- hm_guilds %>% 
+  select(-Group, -Sum, -Sample) %>% 
+  rename(GenSp = Display) %>% 
+  mutate_at(., 1, as.character) %>% 
+  unique()
+
+#unique(hm_guilds2$GenSp)
+
+## Extract guild tag from previous dataset and append it to heatmap dataframe by merging
+tagdf <- guilds_shared2 %>% 
+  select(Guild, GenSp) %>% 
+  unique()
+unique(guilds_shared2$GenSp)
+
+hm_guilds3 <- merge(hm_guilds2, tagdf, by = "GenSp") 
+
+## Sort heatmap dataframe for abundance in donor within each guild
+hm_guilds3sort <- hm_guilds3 %>% 
+  filter(PlantSampleType %in% "D-AS") %>% 
+  group_by(Guild, GenSp) %>% 
+  arrange(Guild, desc(Abundance)) %>% 
+  as.data.frame()
+
+## Sort heatmap dataframe by guilds in donor 
+guildsorder <- c("PAO", "GAO", "nitrifiers", "filaments")
+
+hm_guilds3sort2 <- hm_guilds3sort %>% 
+  arrange(match(.$Guild, guildsorder))
+
+## Extract vector to sort the heatmap. This is the list of species sorted by abundance in D-AS and by guild.
+GenSp_list <- as.factor(hm_guilds3sort2$GenSp)
+print(GenSp_list)
+```
+
+### Sort heatmap plot
+```{r}
+plot_hm <- amp_heatmap(d_sub,
+            group_by = c("Transplantation"),
+            tax_aggregate = "Species",
+            tax_add = "Genus",
+            tax_show = GenSp_list,
+            facet_by = "PlantSampleType",
+            color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
+            plot_colorscale = "log10",
+            plot_values = TRUE,
+            plot_values_size = 4,
+            round = 2,
+           normalise = F)  
+
+unique(plot_hm$data$Display)
+setdiff(GenSp_list, unique(plot_hm$data$Display)) #the difference should be 0
+
+# Sort data
+head(plot_hm$data)
+unique(plot_hm$data[,2])
+
+plot_hm$data[,2] <- as.character(plot_hm$data[,2]) #instead of droplevels() as there may be different taxa between 
+plot_hm$data[,2] <- factor(plot_hm$data[,2], levels = rev(GenSp_list))
+
+# Add colors to distinguish between guilds
+guildscol <- rev(c( #pao
+                    "blue", "blue", "blue", "blue","blue", 
+                    "blue", "blue", "blue", "blue","blue", 
+                    "blue", "blue", "blue", "blue","blue", 
+                    "blue", "blue", 
+                    #gao
+                    "black", "black","black","black","black",
+                    "black",
+                    #nitrifiers
+                    "red","red","red","red","red",
+                     #filaments
+                     "darkgreen","darkgreen","darkgreen","darkgreen","darkgreen",
+                     "darkgreen","darkgreen","darkgreen","darkgreen","darkgreen",
+                     "darkgreen","darkgreen","darkgreen","darkgreen","darkgreen",
+                     "darkgreen","darkgreen","darkgreen","darkgreen","darkgreen",
+                     "darkgreen","darkgreen","darkgreen","darkgreen","darkgreen"
+               ))
+
+# Sorted plot
+plot_hm2 <- plot_hm +
+   labs(title = "Before") +
+    theme(legend.position = "right",
+           plot.title = element_text(size = 25, color = "black", hjust = 0.5),
+           legend.text = element_text(size = 12, color = "black"),
+           legend.title = element_text(size = 12, color = "black"),
+           axis.text.y = element_text(size = 14, 
+                                      colour = guildscol
+                                      ), 
+           axis.text.x = element_text(angle = 45, size = 14, color = "white", vjust = 1.1, hjust = 1.1), 
+           strip.text = element_text(size = 18, face = "bold", color = "black")) 
+
+#ggsave(plot = plot_hm2, filename = "Figures/Fig.5 - HM guilds.jpg", width = 9, height = 10, dpi = 600)#, scale = 2, limitsize = F)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.6-Abundance variation over time of PAO species added to R-AS. 
+
+## Import filtered dataset
+```{r}
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+## Import venn-diagram species
+```{r}
+#import dataframe from Venn to get shared species before
+df_venn <- readxl::read_excel("data_generated/df_venn.xlsx")
+
+sb <- subset(df_venn, VennGroup %in% "NA_before_shared") #528 species shared before transplantation
+ub <- subset(df_venn, VennGroup %in% "ASD_before_unique") #402 species unique in donor before transplantation
+```
+
+## Import guilds
+```{r}
+guilds <- readxl::read_excel("data_raw/functional guilds MiDAS3.6.xlsx")
+
+# Data wrangling of guilds names
+
+guilds <- guilds %>% 
+  drop_na() %>% 
+   subset(., !Guild %in% "potential filament in WWTP") #not important
+
+guilds_gendf <- guilds %>% 
+  filter(!`New name`%in% c("midas_s_328", "Ca_Defluviicoccus_seviourii")) %>% #exclude guilds species
+  rename(Genus = `New name`)
+guilds_gendf$Genus <- paste0("g__", guilds_gendf$Genus) #46 genera
+guilds_gen <- guilds_gendf$Genus
+
+guilds_spdf <- guilds %>% 
+  filter(`New name`%in% c("midas_s_328", "Ca_Defluviicoccus_seviourii")) %>% #include guilds species
+  rename(Species_rename = `New name`)
+guilds_spdf$Species_rename <- paste0("s__", guilds_spdf$Species_rename) #2 species
+guilds_sp <- guilds_spdf$Species_rename
+```
+
+## Subset
+```{r}
+#subsetting PAOs genera from guild dataframe (genus level)
+guilds_pao <- subset(guilds_gendf, Guild %in% "PAO") #10 genera
+
+#subset PAOs species from main dataset (to get paos at species level to match with venn subsets)
+dataset_pao <- subset(d_long_filt, SampleType %in% "AS" & 
+                        Genus %in% guilds_pao$Genus)
+dataset_pao$Species_rename <- as.character(dataset_pao$Species_rename)
+#unique(dataset_pao$Genus)
+
+##subsetting PAOs from shared and unique species
+pao_unique <- subset(dataset_pao, Species_rename %in% ub$Species_rename)
+pao_shared <- subset(dataset_pao, Species_rename %in% sb$Species_rename)
+
+#check
+dplyr::inner_join(dataset_pao, ub, by = "Species_rename") #nr of rows corresponds to the nr of rows in pao_unique
+dplyr::inner_join(dataset_pao, sb, by = "Species_rename") #nr of rows corresponds to the nr of rows in pao_shared
+```
+
+##Top 5 
+
+###top 5 unique added species
+
+substitute Species_rename with GenSp
+```{r}
+#select top 5 most abundant species
+top5gensp_PAOunique <- pao_unique %>% 
+  subset(Plants %in% "Donor") %>%
+  group_by(Species_rename2) %>% 
+  summarise(mean_rra = mean(rra_sp)) %>% 
+  arrange(desc(mean_rra)) %>% 
+  unique() %>% 
+  head(., 5) %>% 
+  pull(Species_rename2) %>% 
+  as.character()
+
+
+#subset from all PAOs unique and sort according to above vectors
+PAO_un_add_sub <- subset(pao_unique, Species_rename2 %in% top5gensp_PAOunique)
+
+PAO_un_add_sub$Species_rename2 <- factor(PAO_un_add_sub$Species_rename2, levels = top5gensp_PAOunique)
+
+#plot
+pao_top5u <- ggplot(PAO_un_add_sub, aes(x = Days, y = rra_sp, color=Plants)) + 
+  geom_point(size=3) +
+  geom_line(size=1)+
+     theme(legend.position = "bottom",
+           panel.background = element_blank(),
+           axis.line.x = element_line(color = "black"),
+           axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 22, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 20, color = "black"), 
+           axis.text.x = element_text( size = 20, angle = 90, vjust = 0.5, color = "black"), 
+           axis.title.x = element_text(size = 22, color = "black"),
+           axis.title.y = element_text(size = 22, color = "black"),
+           strip.text = element_text(size = 25, face = "bold", color = "black"),
+            plot.title = element_text(size=30, face = "bold"),
+           plot.subtitle = element_text(size = 20)
+           ) +
+  facet_wrap(~ as.factor(Species_rename2), scales = "free_y", ncol = 5,  labeller = label_wrap_gen(width=10))+
+   xlab("Days") + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  ylab("Relative read abundance [%]") + 
+  scale_x_continuous(breaks=seq(-140,220,40)) +
+  scale_color_discrete(labels = c("D-AS", "R-AS")) 
+
+```
+
+
+###top 5 shared species
+
+substitute Species_rename with GenSp
+```{r}
+#select top 5 most abundant species
+top5gensp_PAOshared <- pao_shared %>% 
+                  subset(Plants %in% "Donor") %>%
+                  group_by(Species_rename2) %>% 
+                  summarise(mean_rra = mean(rra_sp)) %>% 
+                  arrange(desc(mean_rra)) %>% 
+                  unique() %>% 
+                  head(., 5) %>% 
+                  pull(Species_rename2) %>% 
+                  as.character()
+
+#subset from all PAOs unique and sort according to above vectors
+PAO_shared_sub <- subset(pao_shared, Species_rename2 %in% top5gensp_PAOshared)
+
+PAO_shared_sub$Species_rename2 <- factor(PAO_shared_sub$Species_rename2, levels = top5gensp_PAOshared)
+
+#plot
+pao_top5sh <- ggplot(PAO_shared_sub, aes(x = Days, y = rra_sp, color=Plants)) + 
+  geom_point(size=3) +
+  geom_line(size=1)+
+     theme(legend.position = "bottom",
+           panel.background = element_blank(),
+           axis.line.x = element_line(color = "black"),
+           axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 22, face = "bold", color = "black"),
+           legend.title = element_blank(),
+           axis.text.y = element_text(size = 20, color = "black"), 
+           axis.text.x = element_text( size = 20, angle = 90, vjust = 0.5, color = "black"), 
+           axis.title.x = element_text(size = 22, color = "black"),
+           axis.title.y = element_text(size = 22, color = "black"),
+           strip.text = element_text(size = 25, face = "bold", color = "black"),
+            plot.title = element_text(size=30, face = "bold"),
+           plot.subtitle = element_text(size = 20)
+           ) +
+  facet_wrap(~ as.factor(Species_rename2), scales = "free_y", ncol = 5,  labeller = label_wrap_gen(width=10))+
+   xlab("Days") + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  ylab("Relative read abundance [%]") + 
+  scale_x_continuous(breaks=seq(-140,220,40)) +
+  scale_color_discrete(labels = c("D-AS", "R-AS")) 
+
+```
+
+###Top5 plot combined shared and unique
+```{r}
+library(ggpubr)
+
+pao_top5u2 <- ggarrange(pao_top5u + rremove("xlab") + rremove("x.text") + rremove("legend")) 
+
+pao_top5u2 <- annotate_figure(pao_top5u2,
+                fig.lab = "A)", 
+                fig.lab.face = "bold",
+                fig.lab.size = 32,
+                fig.lab.pos = "top.left")
+
+pao_top5sh2 <- annotate_figure(pao_top5sh,
+                fig.lab = "B)", 
+                fig.lab.face = "bold",
+                fig.lab.size = 32,
+                fig.lab.pos = "top.left")
+
+
+pao_top5both <- ggarrange(pao_top5u2,
+                          NULL,
+                          pao_top5sh2,
+                              ncol = 1,
+                              nrow = 3,
+                              align = "hv",
+                              heights = c(1, 0.1, 1.2)
+                           )
+
+ggsave(plot = pao_top5both, filename = "Figures/Fig.6_PAOs.jpeg", height = 12, width = 28)
+
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.7-Evaluation of immigration by independent PCA modelling.
+(from statistial analysis, file "2-full analysis - 0.01 pct -v10-SVK-gd.Rmd")
+
+#Fig.8-Scatterplot of scaled mean-centered relative read abundance in IWW (x-axis) and AS (y-axis) of selected species in R-AS.
+
+##Import filtered dataset
+```{r}
+#import long format
+d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', header = TRUE, encoding = "UTF-8", stringsAsFactors = F)
+```
+
+##Prepare dataset
+```{r}
+#subset for recipient AS samples and scale relative read abundance of each species to z-score
+recz <- d_long_filt %>% 
+  subset(., Plants %in% "Recipient") %>% 
+  group_by(Plants, SampleType, #Days,
+           Species_rename) %>% 
+   mutate(zscore = scale(rra_sp)) %>%   #to scale to zscore
+  ungroup()
+
+
+#pair IWW/AS samples by days
+
+## subset into AS and IWW
+as <- subset(recz, `SampleType` %in% "AS")
+iww <- subset(recz, `SampleType` %in% "IWW")
+
+## check which days are available for each AS and IWW subset
+iww %>% 
+  select(Days) %>% 
+  unique() %>% 
+  arrange(Days) %>% 
+  pull(Days)
+
+as %>% 
+  select(Days) %>% 
+  unique() %>% 
+  arrange(Days) %>% 
+  pull(Days)
+
+## exclude samples that are taken more than 3 days apart between AS and IWW
+iww <- iww %>% 
+  filter(!Days %in% c(20, 43, 88))
+
+as <- as %>% 
+  filter(Days >= -16 & Days < 100) %>% 
+  filter(!Days %in% c(-1, 19, 40, 92))
+  
+## add a third column to both dataset with a newly created time-scale
+as$DaysNew[as$Days == -16] <- 1
+as$DaysNew[as$Days == -8] <- 2
+as$DaysNew[as$Days == 1] <- 3
+as$DaysNew[as$Days == 4] <- 4
+as$DaysNew[as$Days == 6] <- 5
+as$DaysNew[as$Days == 8] <- 6
+as$DaysNew[as$Days == 12] <- 7
+as$DaysNew[as$Days == 15] <- 8
+as$DaysNew[as$Days == 28] <- 9
+as$DaysNew[as$Days == 32] <- 10
+as$DaysNew[as$Days == 48] <- 11
+as$DaysNew[as$Days == 55] <- 12
+as$DaysNew[as$Days == 62] <- 13
+as$DaysNew[as$Days == 70] <- 14
+as$DaysNew[as$Days == 76] <- 15
+as$DaysNew[as$Days == 82] <- 16
+as$DaysNew[as$Days == 98] <- 17
+
+iww$DaysNew[iww$Days == -17] <- 1
+iww$DaysNew[iww$Days == -8] <- 2
+iww$DaysNew[iww$Days == 0] <- 3
+iww$DaysNew[iww$Days == 3] <- 4
+iww$DaysNew[iww$Days == 6] <- 5
+iww$DaysNew[iww$Days == 8] <- 6
+iww$DaysNew[iww$Days == 12] <- 7
+iww$DaysNew[iww$Days == 15] <- 8
+iww$DaysNew[iww$Days == 26] <- 9
+iww$DaysNew[iww$Days == 32] <- 10
+iww$DaysNew[iww$Days == 48] <- 11
+iww$DaysNew[iww$Days == 55] <- 12
+iww$DaysNew[iww$Days == 62] <- 13
+iww$DaysNew[iww$Days == 69] <- 14
+iww$DaysNew[iww$Days == 75] <- 15
+iww$DaysNew[iww$Days == 81] <- 16
+iww$DaysNew[iww$Days == 97] <- 17
+
+##check that both IWW and AS subset now have the same days available
+iww %>% 
+  select(DaysNew) %>% 
+  unique() %>% 
+  arrange(DaysNew) %>% 
+  pull(DaysNew)
+
+as %>% 
+  select(DaysNew) %>% 
+  unique() %>% 
+  arrange(DaysNew) %>% 
+  pull(DaysNew)
+
+
+# Rename needed column so that they are specific for iww and as
+iww_sub <- iww %>% 
+  rename(zscore_iww = zscore) %>% 
+  rename(rra_sp_iww = rra_sp) %>% 
+  select(Species_rename2, Species_rename, Plants, DaysNew, zscore_iww, rra_sp_iww)
+iww_sub$Plants <- as.character(iww_sub$Plants)
+
+as_sub <- as %>% 
+  rename(zscore_as = zscore) %>% 
+  rename(rra_sp_as = rra_sp) %>% 
+  select(Species_rename2, Species_rename, Plants, DaysNew, zscore_as, rra_sp_as) 
+as_sub$Plants <- as.character(as_sub$Plants)
+
+
+# Merge in wide format by DaysinWeek
+wide <- merge(iww_sub, as_sub, by = c("Species_rename2", "Species_rename", "DaysNew", "Plants")) # for scatterplot
+```
+
+##Select species
+```{r}
+#A)Species from model distances. 
+##Select species that contribute the most to the similarity between R-IWW/R-AS(before) and R-IWW/R-AS(after-late) and have a high VIP score. 
+A <- c("f__Ruminococcaceae__ASV3228",
+        "s__midas_s_299",
+       "s__midas_s_2082",
+       "f__Sphingomonadaceae__ASV35937",
+       "s__midas_s_207"
+                )
+
+#B)Added species.
+##Selected unique and abundant species of D-AS added to R-AS
+B <- c("s__midas_s_1",
+       "g__Dietzia__ASV97",
+       "s__midas_s_243",
+       "s__Sphingopyxis_bauzanensis",
+       "s__midas_s_220")
+
+#C)Species within guilds
+C <- c("s__Ca_Microthrix_parvicella",
+       "s__midas_s_403",
+       "s__midas_s_4",
+       "s__midas_s_307",
+       "s__midas_s_5")
+
+# Subset the 3 groups of species from main dataset
+
+wide <- wide %>% 
+  mutate_if(is.factor, as.character)
+
+wide_A <- subset(wide, Species_rename %in% A)
+wide_B <- subset(wide, Species_rename %in% B)
+wide_C <- subset(wide, Species_rename %in% C)
+```
+
+
+```{r}
+# Arrange each subset dataframe
+A2 <- wide_A %>% 
+  select(Species_rename, Species_rename2) %>% 
+  unique() %>% 
+  arrange(match(.$Species_rename, A)) %>% #sort them by highest contribution as discrimination analysis indicates
+  pull(Species_rename2)
+
+B2 <- wide_B %>%
+  select(Species_rename, Species_rename2) %>%
+  unique() %>%
+  pull(Species_rename2)
+
+C2 <- wide_C %>%
+  select(Species_rename, Species_rename2) %>%
+  unique() %>%
+  pull(Species_rename2)
+```
+
+##Plot z-score
+```{r}
+library(ggpubr)
+
+#A
+wide_A$Species_rename2 <- factor(wide_A$Species_rename2, levels = A2)
+
+plotA <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
+   add = "reg.line",  # Add regressin line
+   add.params = list(color = "black", fill = "lightgray"), 
+   conf.int = TRUE,
+   show.legend.text = NA) +
+   #facet_grid(cols = vars(Plant)) +
+  xlim(-3, 5) +
+  ylim(-3, 5) +
+  labs(x = "abundance IWW", y = "abundance AS") +
+  facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
+stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+  theme_bw() +
+  theme(legend.position = "none",
+        strip.text = element_text(size = 12, angle = 0),
+        plot.title = element_text(face = "bold", size = 18)) +
+    labs(title = "A)") 
+
+
+#B
+wide_B$Species_rename2 <- factor(wide_B$Species_rename2, levels = B2)
+
+plotB <- ggscatter(wide_B, x = "zscore_iww", y = "zscore_as", color = "DaysNew",
+   add = "reg.line",  # Add regressin line
+   add.params = list(color = "black", fill = "lightgray"), 
+   conf.int = TRUE,
+   show.legend.text = NA) +
+   #facet_grid(cols = vars(Plant)) +
+  xlim(-3, 5) +
+  ylim(-3, 5) +
+  labs(x = "abundance IWW", y = "abundance AS") +
+  facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
+stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+  theme_bw() +
+  theme(legend.position = "none",
+        strip.text = element_text(size = 12, angle = 0),
+        plot.title = element_text(face = "bold", size = 18)) +
+   labs(title = "B)") 
+
+
+#C
+wide_C$Species_rename2 <- factor(wide_C$Species_rename2, levels = C2)
+
+plotC <- ggscatter(wide_C, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
+   add = "reg.line",  # Add regressin line
+   add.params = list(color = "black", fill = "lightgray"), 
+   conf.int = TRUE,
+   show.legend.text = NA) +
+   #facet_grid(cols = vars(Plant)) +
+  xlim(-3, 5) +
+  ylim(-3, 5) +
+  labs(x = "abundance IWW", y = "abundance AS") +
+ facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
+stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+  theme_bw() +
+  theme(legend.position = "none",
+        strip.text = element_text(size = 12, angle = 0),
+        plot.title = element_text(face = "bold", size = 18)) +
+    labs(title = "C)") 
+
+#legend
+
+pleg <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
+   add = "reg.line",  # Add regressin line
+   add.params = list(color = "black", fill = "lightgray"), 
+   conf.int = TRUE,
+   show.legend.text = NA) +
+   #facet_grid(cols = vars(Plant)) +
+  xlim(-3, 5) +
+  ylim(-3, 5) +
+  labs(x = "abundance IWW", y = "abundance AS") +
+  facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
+stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        strip.text = element_text(size = 12, angle = 0),
+        plot.title = element_text(face = "bold", size = 18)) +
+    labs(title = "A)") +
+   scale_color_continuous(name = "IWW/AS paired sample")
+legend <- get_legend(pleg)
+as_ggplot(legend)
+```
+
+###combined plot z-score
+```{r}
+library(ggpubr)
+p_zscore <-  ggarrange(plotA,
+                       plotB,
+                       plotC,
+                      legend,
+                      heights = c(1,1,1, 0.4),
+                       align = "hv",
+                       ncol = 1,
+                       nrow = 4) 
+
+#ggsave(plot = p_zscore, "Figures/Fig.8-Zscore.jpeg", height = 10, width = 12)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
