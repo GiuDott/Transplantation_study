@@ -203,14 +203,13 @@ d_long4 <- d_long3 %>%
 
 #Export 
 
-```{r}
+```{r, eval = FALSE}
 #Export ampvis-format dataset for further analysis
 ##normalise read counts to relative read abundance within sample before exporting
-# d_amp_sub2 <- amp_subset_samples(d_amp_sub, normalise = T)
-# 
-# saveRDS(object = d_amp_sub2, file = "C:/Users/Giulia/Documents/R/Immigration/Transplantation/paper_codes/data_generated/d_amp_sub.rds")
+d_amp_sub2 <- amp_subset_samples(d_amp_sub, normalise = T)
+saveRDS(object = d_amp_sub2, file = "C:/Users/Giulia/Documents/R/Immigration/Transplantation/paper_codes/data_generated/d_amp_sub.rds")
 
 #Export long-format dataset for further analysis
-# data.table::fwrite(d_long4,file = "C:/Users/Giulia/Documents/R/Immigration/Transplantation/data_generated/d_long4.tsv", sep = "\t")
+data.table::fwrite(d_long4,file = "C:/Users/Giulia/Documents/R/Immigration/Transplantation/data_generated/d_long4.tsv", sep = "\t")
 ```
 
