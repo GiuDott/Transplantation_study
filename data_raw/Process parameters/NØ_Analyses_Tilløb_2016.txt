@@ -1,0 +1,26 @@
+Prøvetagning	Undersøgelsesformål	Laboratoriets reference	Nonylphenol-monoethoxylater (NP1EO) [µg/l]	Nonylphenol-diethoxylater (NP2EO) [µg/l]	Nonylphenol +nonylphenolmono- og diethoxylater [µg/l]	Bisphenol A [µg/l]	Fluoren [µg/l]	Antracen [µg/l]	Pyren [µg/l]	Chrysen [µg/l]	Benz[a]pyren [µg/l]	pH [pH]	Phenanthren [µg/l]	TCPP [µg/l]	BI5 Biokemisk iltforbrug 5 døgn [mg/l]	COD, Kemisk iltforbrug [mg/l]	Naphtalen [µg/l]	Cyanid, total [mg/l]	Acenaphthylen [µg/l]	Benz(b)fluoranthen [µg/l]	Dibenz(ah)anthracen [µg/l]	Benz(ghi)perylen [µg/l]	Benz(k)fluoranthen [µg/l]	Benz(a)anthracen [µg/l]	Ammoniak+ammonium-N [mg/l]	Nitrit-N [mg/l]	Nitrat-N [mg/l]	Nitrit+nitrat-N [mg/l]	Nitrogen,total [mg/l]	Ortho-phosphat-P [mg/l]	Phosphor, total-P [mg/l]	Bly [µg/l]	Cadmium [µg/l]	Chlorid [mg/l]	Chrom [µg/l]	Kobber [µg/l]	Kviksølv [µg/l]	Suspenderede stoffer [mg/l]	Nikkel [mg/l]	Zink [µg/l]	Olie [mg/l]	Phenol [µg/l]	Fluoranthen [µg/l]	Indeno(1,2,3-cd)pyren [µg/l]	Acenaphthen [µg/l]	Triphenylphosphat [µg/l]	Tributylphosphat [µg/l]	Benzo(j)fluoranthen [µg/l]	4-Nonylphenol [µg/l]	Nedbør [mm] - Feltmåling	Vandføring [m3/d] - Feltmåling	Minimum vandføring [m3/h] - Feltmåling	Maximum vandføring [m3/h] - Feltmåling
+11.01.2016	Egenkontrol	1756667_821169										7.61			169	340									22.4	0.316	0.0385	0.39	36.3	0.74	4.7			134				160												1	7142	235	335
+25.01.2016	Egenkontrol	1759958_826624										7.39			130	350									13.6	0.185	1.09	1.3	21.5	0.54	3.7			116				180												0	10186	291	621
+09.02.2016	Egenkontrol	1759959_831387										7.52			93	300									11.1	0.171	1.37	1.5	16.5	0.62	2.9			88				110												9	17978	375	1184
+24.02.2016	Egenkontrol	1765771_838453										7.63			161	350									22.8	0.423	0.0385	0.5	35.6	1.4	5			114				160												0	7819	259	370
+06.03.2016	Egenkontrol	1759960_841070										7.58			120	320									13.9	0.173	1.05	1.2	26.5	0.76	3.2			89.4				160												2	12368	351	655
+17.03.2016	Egenkontrol	1759961_845631										7.37			230	450									25.2	0.172	0.666	0.84	38.5	3.1	6.7			123				240												0	6601	220	317
+29.03.2016	Egenkontrol	1769392_848208										7.63			96	440									26.9	0.01	0.116	0.25	41.6	1.9	6.7			133				240												1	5591	176	263
+11.04.2016	Egenkontrol	1759963_852164										7.53			180	400									29.9	0.01	0.0385	0.049	37.9	1.3	5.9			142				230												1	6107	187	307
+27.04.2016	Egenkontrol	1759964_858727										7.48			260	400									19.6	0.356	0.118	0.59	31.6	1.6	5.6			88.8				460												3	10261	172	897
+10.05.2016	Egenkontrol	1760002_863129										7.47			300	550									28.8	0.01	0.0385	0.049	44.1	2.6	7.7	1.9	0.142	133	10.9	76.9	0.015	290	0.0091	118	0.33									0	5194	164	252
+22.05.2016	Egenkontrol	1759965_867729										7.49			280	590									28.5	0.01	0.0385	0.049	40.7	1.9	7.8			110				430												4	5681	168	350
+08.06.2016	Egenkontrol	1759966_875203										7.36			350	710									38.7	0.01	0.193	0.25	56	0.22	9.3			176				560												0	4517	145	210
+23.06.2016	Egenkontrol	1759967_881428										7.46			310	610									38	0.01	0.0385	0.049	44.9	3.8	8.6			158				300												0	4287	139	208
+04.07.2016	Egenkontrol	1759968_885642										7.5			240	540									29.1	0.01	0.0385	0.049	41.5	2.4	8.1			134				310												0	4285	133	225
+17.07.2016	Egenkontrol	1782345_890422										7.44			280	560									34.6	0.0213	0.518	0.58	45.4	1.3	6			120				430												0	4069	122	224
+16.08.2016	Egenkontrol	1760003_100562										7.62			270	580									38.7	0.01	0.0385	0.049	54.2	3	7.3	2	0.125	141	3.4	101	0.0364	490	0.0072	140	0.71									0	4304	125	219
+07.09.2016	Egenkontrol	1759970_109566										7.42			280	960									43	0.01	0.0385	0.049	54.3	1.8	10			143				430												0	4095	130	217
+15.09.2016	Egenkontrol	1759971_113082										7.48			260	710									47.3	0.01	0.0385	0.049	57.5	1.9	9.1			175				370												0	4063	118	196
+25.09.2016	Egenkontrol	1792597_117314										7.6			280	770									50.6	0.01	0.0385	0.049	59.8	2.4	9	2.2	0.132	142	6.7	121	0.015	370	0.0094	163	1.2									0	4055	111	219
+10.10.2016	Egenkontrol	1759973_123824										7.9			310	610									39.3	0.01	0.0385	0.049	62	2.5	7.4			135				310												4	5710	108	502
+10.10.2016	Egenkontrol	1793660_123792	5.4	0.1	5.4	2.5	0.00835	0.00835	0.00835	0.00835	0.00835		0.00835	1.1			0.00835	0.0015	0.00835	0.00835	0.00835	0.00835	0.00835	0.00835																		100	0.00835	0.00835	0.00835	0.025	0.065	0.00835	0.175	4	5710	108	502
+25.10.2016	Egenkontrol	1759943_130882										7.69			220	640									31.2	0.01	0.0385	0.049	55.8	3.1	7.1			136				340												0	4445	141	220
+06.11.2016	Egenkontrol	1759975_137372										7.67			170	490									31.9	0.01	0.0385	0.049	34.8	3.3	5.9			124				230												0	4794	123	259
+24.11.2016	Egenkontrol	1760004_149036										7.55			280	470									34.2	0.01	0.0385	0.049	40.4	3.4	7.3	1.2	0.102	144	1.3	50.6	0.015	250	0.0038	96.9	0.36									0	5161	155	257
+07.12.2016	Egenkontrol	1759976_156416										7.46			370	870									31.8	0.01	0.0385	0.049	38.4	4.5	9.6			152				480												3	6526	132	571
