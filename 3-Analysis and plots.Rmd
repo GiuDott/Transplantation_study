@@ -309,7 +309,7 @@ Egenkontrol_Days$StartTime <- strptime(Egenkontrol_Days$StartTime, format = c("%
 
 ```{r Metadata SVI}
 ### SVI ###
-Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_2017.11.13.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") #%>%
+Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_2017.11.13_gd.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") #%>%
 
 names(Data)[names(Data) == "Dato"] <- "StartTime"
 names(Data)[names(Data) == "Bundfældningsegenskaber.SV..30.min...ml.l"] <- "SV"
