@@ -7,7 +7,9 @@ This repository includes the following scripts that allow to reproduce the resul
 
  • “1-Load data.Rmd”: it loads the raw amplicon data (ASV table with MiDAS taxonomy), and samples metadata and performs preliminary filtering of dataset. It requires “Additional file 2” and “Additional file 3” provided with the paper submission. It generates files to be used in the following Rmd file.
 
-•	“2-Statistical analysis.Rmd”: it is developed by Prof. Sergey Kucheryavskiy and it performs the main statistical analysis of the study. It requires the “Additional file 4” provided with the paper submission. It generates Figure 2B, Figure S3, Figure S4 and Figure 7. It generates files to be used in the following Rmd file.
+•	“2A-Data preprocessing.Rmd”: it is developed by Prof. Sergey Kucheryavskiy and it performs the data preprocessing needed for statistical analysis. It generates files to be used in the following Rmd file.
+
+•	“2B-Statistical analysis.Rmd”: it is developed by Prof. Sergey Kucheryavskiy and it performs the main statistical analysis of the study. It requires the “Additional file 4” provided with the paper submission. It generates Figure 2B, Figure S3, Figure S4 and Figure 7. It generates files to be used in the following Rmd file.
 
 •	“3-Analysis and plots.Rmd”: it includes analysis and all main plots included in the paper (from Figure 1 to Figure 8, and Table S3). Codes generated in collaboration with Dorottya Sarolta Wágner and Mikkel Stokholm-Bjerregaard.
 
