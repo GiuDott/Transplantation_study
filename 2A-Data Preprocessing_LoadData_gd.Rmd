@@ -1,0 +1,176 @@
+---
+title: "Untitled"
+author: "Giulia"
+date: "6/16/2022"
+output: html_document
+---
+
+
+
+#1. Load raw data
+
+The dataset was prepared importing the raw `.tsv` file:
+
+```{r}
+d <- read.delim("data_generated/d_long4.tsv") 
+
+#re-modify names to be able to run this script 
+library(tidyverse)
+d <- d %>%
+  mutate_if(is.factor, as.character)
+
+d$SampleType[d$SampleType %in% "IWW"] <- "Wastewater influent"
+d$SampleType[d$SampleType %in% "AS"] <- "Activated Sludge"
+```
+
+#Criteria
+
+Species "s__midas_s_1344" and "g__midas_g_67__ASV4043" were removed because they had increasing abundance only in the final 8 samples taken from the recipient plant (R-AS (after-late)), and therefore were considered not relevant for the evaluation of transplantation.
+
+```{r}
+# Threshold assuming that relative abundance varies between 0 (0%) and 1 (100%)
+threshold <- 0.0001 # 0.0001%
+
+# Which species we force to exclude regardless their mean abundance
+spieces.exclude <- c("s__midas_s_1344", "g__midas_g_67__ASV4043")
+```
+
+#2. Create Counts, Meta and Abundance items
+
+The dataset was prepared using the raw `.tsv` file as follows:
+
+1. Original data was loaded and transformed into 135x12344 matrix `Counts` containing number of counts (absolute abundance)
+
+2. The counts were normalized, so abundance values in every row sum up to one, the result with relative abundance values was saved into a matrix `Abundance`. 
+
+3. Data frame `Meta` with 135 rows was also created containing the following columns: `ID`, `Plant`, `Type`, `Day`.
+
+```{r}
+IDs <-  unique(d$SampleID)
+nObj <- length(unique(d$SampleID))
+nSpecies <- nrow(d) / nObj
+
+Counts <- matrix(0, nObj, nSpecies)
+Meta <- matrix(0, nObj, 4)
+colnames(Meta) <- c("ID", "Plant", "Type", "Day")
+
+# make data objects with counts and meta data
+n <- 1
+for (ID in IDs) {
+  s <- subset(d, SampleID == ID)
+  
+  if (n == 1) {
+    sNames <- s$Species_rename
+  } else if (!all(sNames == s$Species_rename)) {
+    stop("Inconsistency in species names")
+  }
+  
+  Counts[n, ] <- s$count_sp
+  Meta[n, "ID"] <- ID
+  Meta[n, "Plant"] <- if (s$Plants[1] == "Recipient") "R" else "D"
+  Meta[n, "Type"] <- if (s$SampleType[1] == "Wastewater influent") "IWW" else "AS"
+  Meta[n, "Day"] <- s$Days[1]
+  n <- n + 1
+}
+
+rownames(Counts) <- IDs
+colnames(Counts) <- sNames
+
+# compute relative abundance to make measurement in every row sums up to 1
+Abundance <- t(scale(t(Counts), center = FALSE, scale = rowSums(Counts)))
+cat(paste0("\nCheck that all sums in Abundance sum up to 1:  \n", all(rowSums(Abundance) == 1), "\n"))
+```
+
+#3. Add group names to Meta data frame
+
+4. Based on the plant, type and day values the following groups were created:
+
+   * `D-IWW` — (20 measurements - all measurements for D-IWW)
+   * `D-AS (before)` — (11 measurements for D-AS before transplantation)
+   * `D-AS (after - early)` — (10 measurements for D-AS during first 40 days)
+   * `D-AS (after - intermediate)` — (15 measurements for D-AS for days from 41 to 150)
+   * `D-AS (after - later)` — (8 measurements for D-AS for days from 151 and on)
+   * `R-IWW` — (20 measurements - all measurements for R-IWW)
+   * `R-AS (before)` (18 measurements for R-AS before transplantation)
+   * `R-AS (after - early)` — (10 measurements for R-AS during first 40 days)
+   * `R-AS (after - intermediate)` — (15 measurements for R-AS for days from 41 to 150)
+   * `R-AS (after - later)` — (8 measurements for R-AS for days from 151 and on)
+
+5. The group names were added as an extra column to `Meta` data frame.
+
+```{r}
+# convert Meta to data frame and add initial values for groups (subsets)
+Meta <- as.data.frame(Meta)
+Meta$Day <- as.character(Meta$Day) #GD's modification
+Meta$Group <- paste0(Meta$Plant, "-", Meta$Type)
+
+# add suffix "before" and "after" to the groups
+noIWW <- Meta$Type != "IWW"
+Meta$Group[noIWW] <- paste0(Meta$Group[noIWW], " (", ifelse(Meta$Day[noIWW] < 0, "before", "after"), ")")
+
+#extract n
+
+# split "R-AS after" group into subgroups
+###GD's modification
+RAS_after_early <- c("1", "4", "6", "8", "12", "15", "19", "28", "32", "40")
+RAS_after_intermediate <- c("48", "55", "62", "70", "76", "82", "92", "98", "106", "113", "119", "127", "133", "140", "147")
+RAS_after_late <- c("155", "161", "168", "175", "180", "188", "196", "203")
+
+Meta$Group[Meta$Group == "R-AS (after)" & Meta$Day %in% RAS_after_early] <- "R-AS (after - early)"
+Meta$Group[Meta$Group == "R-AS (after)" & Meta$Day %in% RAS_after_intermediate] <- "R-AS (after - intermediate)"
+Meta$Group[Meta$Group == "R-AS (after)" & Meta$Day %in% RAS_after_late] <- "R-AS (after - late)"
+
+
+# split "D-AS after" group into subgroups
+###GD's modification
+DAS_after_early <- c("1", "4", "6", "8", "12", "15", "19", "28", "32", "40")
+DAS_after_intermediate <- c("48", "55", "62", "70", "76", "82", "92", "98", "106", "113", "118", "127", "133", "139", "147")
+DAS_after_late <- c("154", "161", "168", "175", "180", "188", "194", "201")
+
+Meta$Group[Meta$Group == "D-AS (after)" & Meta$Day %in% DAS_after_early] <- "D-AS (after - early)"
+Meta$Group[Meta$Group == "D-AS (after)" & Meta$Day %in% DAS_after_intermediate] <- "D-AS (after - intermediate)"
+Meta$Group[Meta$Group == "D-AS (after)" & Meta$Day %in% DAS_after_late] <- "D-AS (after - late)"
+
+
+cat("\nCheck how many observations are in each group:\n")
+show(as.data.frame(table(as.factor(Meta$Group))))
+```
+
+#4. Filtering and cleaning
+
+6. For each species in `Abundance` matrix, a mean abundance was computed separately using measurements from the groups. Species which have abundance smaller than 0.0001 (0.01%) in all ten groups were removed from this matrix.
+
+```{r}
+# compute if mean < threshold for species in each group
+excluded <- t(sapply(
+  unique(Meta$Group), 
+  function(g) apply(Abundance[Meta$Group == g, ], 2, function(x) mean(x) < threshold)
+))
+
+# find species where this is TRUE for all groups
+excluded <- which(apply(excluded, 2, function(x) all(x)))
+
+# add species we force to remove
+excluded <- c(excluded, which(colnames(Abundance) %in% spieces.exclude))
+
+# remove all species marked as excluded
+Abundance <- Abundance[, -excluded]
+attr(Abundance, "excluded") <- colnames(Counts)[excluded]
+
+# add days as y-axis values attribute
+attr(Abundance, "yaxis.values") <- Meta$Day
+attr(Abundance, "yaxis.name") <- "Days"
+
+cat("\nSize of the Abundance matrix after filtering:\n")
+show(dim(Abundance))
+
+```
+
+#Exporting
+
+The result was saved into file `fullData001pct2.RData`  and it consists of matrix `Abundance` with 135 rows and `r ncol(Abundance)` columns, matrix `Counts` with 135 rows and 12344 columns, and data frame `Meta` with 135 rows and 5 columns.
+
+```{r}
+save(file = "data_generated/fullData001pct2.RData", Abundance, Counts, Meta)
+```
+

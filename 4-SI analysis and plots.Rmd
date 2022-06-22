@@ -15,80 +15,14 @@ library(tidyverse) #version 1.2.1
 library(ggplot2) #version now 3.3.5
 ```
 
-#Fig.S1 - pictures of transplantation
 
-#Fig.S2-Overview of samples collected for microbial community analysis.
-```{r}
-# Prepare metadata
-
-## subset needed column
-d_meta <- d_long_filt %>% 
-          select(Plants, SampleType, Date, Days, Transplantation, SampleGroup) %>% 
-          unique()
-
-## add a simple grouping for the plot
-d_meta$SampleGroup2[d_meta$SampleType %in% "IWW"] <- "IWW"
-d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(before)" | d_meta$SampleGroup %in% "R-AS(before)"] <- "AS(before)"
-d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-early)" | d_meta$SampleGroup %in% "R-AS(after-early)"] <- "AS(after-early)"
-d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-intermediate)" | d_meta$SampleGroup %in% "R-AS(after-intermediate)"] <- "AS(after-intermediate)"
-d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-late)" | d_meta$SampleGroup %in% "R-AS(after-late)"] <- "AS(after-late)"
-
-## sort grouping
-d_meta$SampleGroup2 <- factor(d_meta$SampleGroup2, levels = c("IWW",
-                                                          "AS(before)",
-                                                          "AS(after-early)",
-                                                          "AS(after-intermediate)",
-                                                          "AS(after-late)"))
-
-# Plot
-library(ggrepel)
-
-p_meta <- ggplot(d_meta, aes(x = Days, y=SampleType, color = SampleGroup2)) +
-                geom_point() +
-                geom_vline(xintercept = 0, linetype = "dashed") +
-                geom_text(data = subset(d_meta, !Days %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8)), aes(label = Days), hjust = -0.5,  vjust = 0.2, angle = 90, size = 3, show.legend = FALSE) +
-               geom_text_repel(data= subset(d_meta, Days %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8)), 
-                            aes(label = Days,
-                                segment.square = F,
-                                segment.inflect = F),
-                               show.legend = FALSE,
-                                angle = 90, size = 3,
-                                vjust = -0.5, 
-                                direction         = "x",
-                                segment.size      = 0.5,
-                                min.segment.length = 0
-                              )  +
- 
-                facet_wrap(~Plants, ncol = 1, nrow = 2) +
-                ylab("Sample type") +
-                theme_bw() +
-                theme(legend.position = "right",
-                      strip.text = element_text(face = "bold", size = 13),
-                      axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5)) +
-                scale_x_continuous(breaks=seq(-140,200,10)) +
-                scale_color_manual(values = c("IWW" = "darkgrey",
-                                                "AS(before)" = "black",
-                                                "AS(after-early)" = "blue",
-                                              "AS(after-intermediate)" = "darkgreen",
-                                              "AS(after-late)" = "red"),
-                                   name = "Sample Group") 
-                
-
-ggsave(plot = p_meta, filename = "Figures/Fig.S2-Samples overview.jpeg", width = 10, height = 4)
-```
-
-Clean Environment for next analysis
-```{r}
-rm(list=ls(all=TRUE))
-```
-
-#Fig.S3-Distance plots to D-AS(before) model.
+#Fig.S1-Distance plots to D-AS(before) model.
 (from statistial analysis, file "2-full analysis - 0.01 pct -v10-SVK-gd.Rmd")
 
-#Fig.S4-Distance plots to R-AS(before) model.
+#Fig.S2-Distance plots to R-AS(before) model.
 (from statistial analysis, file "2-full analysis - 0.01 pct -v10-SVK-gd.Rmd")
 
-#Fig.S5-Abundance variation over time before transplantation of selected genera.
+#Fig.S3-Abundance variation over time before transplantation of selected genera.
 
 ###Import filtered dataset
 ```{r}
@@ -180,7 +114,7 @@ p_gen <- ggplot(ppmb2, aes(x = Days, y = Abundance, color=Plant))+
   scale_x_continuous(breaks=seq(-140,220,20)) +
   scale_color_discrete(labels = c("D-AS", "R-AS")) 
 
-ggsave(plot = p_gen, "Figures/Fig.S5 - Top 5 genera before transplantation.jpeg", height = 5, width = 20)
+ggsave(plot = p_gen, "Figures/Fig.S3 - Top 5 genera before transplantation.jpeg", height = 5, width = 20)
 ```
 
 Clean Environment for next analysis
@@ -188,7 +122,7 @@ Clean Environment for next analysis
 rm(list=ls(all=TRUE))
 ```
 
-#Fig.S6-Sludge retention time of recipient plant.
+#Fig.S4-Sludge retention time of recipient plant.
 
 ###Import raw metadata
 
@@ -303,17 +237,17 @@ p_srt <- ggarrange(p_timeseries, NULL, p_boxplot,
                     widths = c(1, 0.05, 0.3)
                 ) 
 
-ggsave(plot = p_srt, "Figures/Fig.S6-SRT recipient.jpg", width = 10, height = 4)
+ggsave(plot = p_srt, "Figures/Fig.S4-SRT recipient.jpg", width = 10, height = 4)
 ```
 Clean Environment for next analysis
 ```{r}
 rm(list=ls(all=TRUE))
 ```
 
-#Fig.S7-Possible responses of microbial community to transplantation.
+#Fig.S5-Possible responses of microbial community to transplantation.
 Theory image made in Inkscape
 
-#Fig.S8-Removal of abundant species from recipient through transplantation.  
+#Fig.S6-Removal of abundant species from recipient through transplantation.  
 
 ###Import filtered dataset
 ```{r}
@@ -391,7 +325,7 @@ p_removed <- ggplot(both_top5, aes(x = Days, y = rra_sp, color=Plants, group = P
                 scale_x_continuous(breaks=seq(-140,220,40)) +
                  scale_color_discrete(labels = c("D-AS", "R-AS"))
 
-#ggsave(plot = p_removed, "Figures/Fig.S8-Removed top5.jpeg", height = 4, width = 18)
+#ggsave(plot = p_removed, "Figures/Fig.S6-Removed top5.jpeg", height = 4, width = 18)
 ```
 
 Clean Environment for next analysis
@@ -399,7 +333,7 @@ Clean Environment for next analysis
 rm(list=ls(all=TRUE))
 ```
 
-#Fig.S9-Effect of transplantation for PAOs at species level.
+#Fig.S7-Effect of transplantation for PAOs at species level.
 
 ## Import filtered dataset
 ```{r}
@@ -590,7 +524,7 @@ pall2 <- plot_grid(pall,
                   rel_heights = c(1, .05)
                   ) 
 
-ggsave(plot = pall2, "Figures/Fig.S9-PAOs.jpg", width = 18, height = 12)
+ggsave(plot = pall2, "Figures/Fig.S7-PAOs.jpg", width = 18, height = 12)
 ```
 
 Clean Environment for next analysis
@@ -598,7 +532,7 @@ Clean Environment for next analysis
 rm(list=ls(all=TRUE))
 ```
 
-#Fig.S10-Effect of transplantation for genera belonging to functional guilds.
+#Fig.S8-Effect of transplantation for genera belonging to functional guilds.
 ###Import filtered dataset
 ```{r}
 #import long format
@@ -719,7 +653,7 @@ p_guilds_all <- ggarrange(plot$PAOs + rremove("legend"),
            font.label = list(size = 23, face = "bold"),
              heights = c(1, 1, 1, 1.5, 0.1)) 
 
-ggsave(plot = p_guilds_all, "Figures/Fig.S10-Time-series genera guilds.jpeg", height = 16, width = 20)
+ggsave(plot = p_guilds_all, "Figures/Fig.S8-Time-series genera guilds.jpeg", height = 16, width = 20)
 ```
 
 Clean Environment for next analysis
@@ -728,7 +662,7 @@ rm(list=ls(all=TRUE))
 ```
 
 
-#Fig.S11-Variation over time of abundance of selected species in AS and IWW from the recipient plant. 
+#Fig.S9-Variation over time of abundance of selected species in AS and IWW from the recipient plant. 
 
 ###Import filtered dataset
 ```{r}
@@ -897,7 +831,74 @@ p_all <- ggarrange(p_sub2$A, p_sub2$B, p_sub2$C, legend,
                 nrow = 4,
                 heights = c(1, 1, 1, 0.1))
 
-ggsave(plot = p_all, "Figures/Fig.S11-Time-series IWW and AS.jpeg", height = 16, width = 20)
+ggsave(plot = p_all, "Figures/Fig.S9-Time-series IWW and AS.jpeg", height = 16, width = 20)
+```
+
+Clean Environment for next analysis
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+#Fig.S10 - pictures of transplantation
+
+#Fig.S11-Overview of samples collected for microbial community analysis.
+```{r}
+# Prepare metadata
+
+## subset needed column
+d_meta <- d_long_filt %>% 
+          select(Plants, SampleType, Date, Days, Transplantation, SampleGroup) %>% 
+          unique()
+
+## add a simple grouping for the plot
+d_meta$SampleGroup2[d_meta$SampleType %in% "IWW"] <- "IWW"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(before)" | d_meta$SampleGroup %in% "R-AS(before)"] <- "AS(before)"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-early)" | d_meta$SampleGroup %in% "R-AS(after-early)"] <- "AS(after-early)"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-intermediate)" | d_meta$SampleGroup %in% "R-AS(after-intermediate)"] <- "AS(after-intermediate)"
+d_meta$SampleGroup2[d_meta$SampleGroup %in% "D-AS(after-late)" | d_meta$SampleGroup %in% "R-AS(after-late)"] <- "AS(after-late)"
+
+## sort grouping
+d_meta$SampleGroup2 <- factor(d_meta$SampleGroup2, levels = c("IWW",
+                                                          "AS(before)",
+                                                          "AS(after-early)",
+                                                          "AS(after-intermediate)",
+                                                          "AS(after-late)"))
+
+# Plot
+library(ggrepel)
+
+p_meta <- ggplot(d_meta, aes(x = Days, y=SampleType, color = SampleGroup2)) +
+                geom_point() +
+                geom_vline(xintercept = 0, linetype = "dashed") +
+                geom_text(data = subset(d_meta, !Days %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8)), aes(label = Days), hjust = -0.5,  vjust = 0.2, angle = 90, size = 3, show.legend = FALSE) +
+               geom_text_repel(data= subset(d_meta, Days %in% c(0, 1, 2, 3, 4, 5, 6, 7, 8)), 
+                            aes(label = Days,
+                                segment.square = F,
+                                segment.inflect = F),
+                               show.legend = FALSE,
+                                angle = 90, size = 3,
+                                vjust = -0.5, 
+                                direction         = "x",
+                                segment.size      = 0.5,
+                                min.segment.length = 0
+                              )  +
+ 
+                facet_wrap(~Plants, ncol = 1, nrow = 2) +
+                ylab("Sample type") +
+                theme_bw() +
+                theme(legend.position = "right",
+                      strip.text = element_text(face = "bold", size = 13),
+                      axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5)) +
+                scale_x_continuous(breaks=seq(-140,200,10)) +
+                scale_color_manual(values = c("IWW" = "darkgrey",
+                                                "AS(before)" = "black",
+                                                "AS(after-early)" = "blue",
+                                              "AS(after-intermediate)" = "darkgreen",
+                                              "AS(after-late)" = "red"),
+                                   name = "Sample Group") 
+                
+
+ggsave(plot = p_meta, filename = "Figures/Fig.S11-Samples overview.jpeg", width = 10, height = 4)
 ```
 
 Clean Environment for next analysis

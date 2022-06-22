@@ -16,7 +16,7 @@ library(ggplot2)
 library(mdatools)
 library(readxl)
 library(kableExtra)
-load(file = "data_generated/Additional-file-4_fullData001pct2.RData")
+load(file = "data_generated/fullData001pct2.RData")
 
 # define colors for the groups
 c3 <- mdaplot.getColors(3)
@@ -368,7 +368,7 @@ ggplot(pCooman_data$points, aes(f1, f2)) +
                       values= c(3, 2, 1, 1, 1)) 
 
 
-# jpeg("Figures/Fig.2-Cooman.jpg", width = 500, height = 500)
+# jpeg("Figures/Fig.2B-Cooman.jpg", width = 500, height = 500)
 # plotTotalDistances(mr, md, X[s2], col = col3)
 # title(outer = T, adj = 0, main = "B)", cex.main = 1.5, col="black", font=2, line=-2.5)
 ```
@@ -439,10 +439,10 @@ plotTotalDistance(mr, X[s1])
 plotTotalDistances(mr, md, X[s2])
 ```
 
-##Fig.S3
+##Fig.S1
 Distance to Donor
 ```{r}
-#jpeg("Figures/Fig.S3-Dist to DAS.jpg", width = 800, height = 400)
+#jpeg("Figures/Fig.S1-Dist to DAS.jpg", width = 800, height = 400)
 par(mfrow = c(1, 2))
 plotResiduals(md, legend.position = "topleft", main = "Distances to D-AS (before)",
               res = rd, pch = pch[names(rd)], col = col[names(rd)])
@@ -451,10 +451,10 @@ plotTotalDistance(md, X[s1], col = col1)
 title(outer = T, adj = 0.5, main="B)", cex.main = 1.5, col="black", font=2, line=-2.5)
 ```
 
-##Fig.S4
+##Fig.S2
 Distance to Recipient
 ```{r}
-#jpeg("Figures/Fig.S4-Dist to RAS.jpg", width = 800, height = 400)
+#jpeg("Figures/Fig.S2-Dist to RAS.jpg", width = 800, height = 400)
 par(mfrow = c(1, 2))
 plotResiduals(mr, legend.position = "topleft", main = "Distances to R-AS (before)", 
               res = rr, pch = pch[names(rr)], col = col[names(rr)])
