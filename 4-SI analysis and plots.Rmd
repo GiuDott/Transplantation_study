@@ -356,7 +356,7 @@ shared <- subset(d_long_filt, SampleType %in% "AS" & Species_rename %in% sb$Spec
 
 ## Import guilds
 ```{r}
-guilds <- readxl::read_excel("data_raw/functional guilds MiDAS3.6.xlsx")
+guilds <- readxl::read_excel("data_raw/functional_guilds.xlsx")
 
 # Data wrangling of guilds names
 guilds <- guilds %>% 
