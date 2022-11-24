@@ -545,9 +545,9 @@ p1 <- ggplot(d1, aes(x=Group, y=mean, fill=Groups)) +
          plot.title = element_text(hjust = 0.5)) +
    labs(title = "Distance from R-IWW model") +
    scale_fill_manual("Group", values = c("AS (before)" = "black", 
-                                         "AS (after-early)" = c3[1], 
-                                         "AS (after-intermediate)" = c3[2],
-                                         "AS (after-late)" = c3[3],
+                                         "AS (after-early)" = "#8351DA", 
+                                         "AS (after-intermediate)" = "#2D949A",
+                                         "AS (after-late)" = "#D05801",
                                          "IWW" = "gray"))
 
 p2 <- ggplot(d2, aes(x=Group, y=mean, fill=Groups)) + 
@@ -559,12 +559,11 @@ p2 <- ggplot(d2, aes(x=Group, y=mean, fill=Groups)) +
          title = element_text(face = "bold", colour = "black"),
          plot.title = element_text(hjust = 0.5)) +
    labs(title = "Distance from D-IWW model")+
-   scale_fill_manual("Group", values = c("AS (before)" = "black", 
-                                         "AS (after-early)" = c3[1], 
-                                         "AS (after-intermediate)" = c3[2],
-                                         "AS (after-late)" = c3[3],
+    scale_fill_manual("Group", values = c("AS (before)" = "black", 
+                                         "AS (after-early)" = "#8351DA", 
+                                         "AS (after-intermediate)" = "#2D949A",
+                                         "AS (after-late)" = "#D05801",
                                          "IWW" = "gray"))
-
 
 p_both <- ggarrange(p1 + rremove("legend") + rremove("xlab") + rremove("ylab"), 
                    p2 + rremove("legend") + rremove("xlab") + rremove("ylab"), 
@@ -577,6 +576,7 @@ p_both <- ggarrange(p1 + rremove("legend") + rremove("xlab") + rremove("ylab"),
                    )
 
 #ggsave(plot = p_both, filename = "Figures/Fig.7-Barplot models distance immigration.jpeg", height = 7, width = 10)
+ggsave(plot = p_both, filename = "Figures/Figure7 - Barplot models distance immigration.pdf", width = 190, height = 140, dpi = 300, units = "mm")
 ```
 
 

@@ -152,7 +152,7 @@ d_long_filt <- read.table(file = 'data_generated/d_long_filt.tsv', sep = '\t', h
 library(reshape2)
 
 ### Outlet ###
-Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_1.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_1.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") %>% 
   subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
   subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
   subset(NOE.outlet.NO3.mg.l < 500) %>%
@@ -160,7 +160,7 @@ Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_1.txt", sep = 
 
  Outlet1 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
 
-Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_2.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_2.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") %>% 
   subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
   subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
   subset(NOE.outlet.NO3.mg.l < 500) %>%
@@ -169,7 +169,7 @@ Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_2.txt", sep = 
  Outlet2 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
 
 
-Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_3.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_3.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") %>% 
   subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
   subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
   subset(NOE.outlet.NO3.mg.l < 500) %>%
@@ -177,7 +177,7 @@ Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_3.txt", sep = 
 
  Outlet3 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
  
-Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_4.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_4.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") %>% 
   subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
   subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
   subset(NOE.outlet.NO3.mg.l < 500) %>%
@@ -185,7 +185,7 @@ Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_4.txt", sep = 
 
  Outlet4 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[3:ncol(Data)], variable.name = "Parameter", value.name = "Value")
  
- Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_med_po4_LT.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_med_po4_LT.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") %>% 
   subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
   subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
   subset(NOE.outlet.NO3.mg.l < 500) %>%
@@ -193,7 +193,7 @@ Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_4.txt", sep = 
 
  Outlet5 <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[7:ncol(Data)], variable.name = "Parameter", value.name = "Value")
  
- Data <- read.delim(file = "data_raw/Process parameters/NØ_Udløb_med_po4_Afløb.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") %>% 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_udløb_med_po4_afløb.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") %>% 
   subset(NOE.outlet.pH > 0 & NOE.outlet.pH < 12) %>% 
   subset(NOE.outlet.Temperature.C > 0 & NOE.outlet.Temperature.C < 100) %>%
   subset(NOE.outlet.NO3.mg.l < 500) %>%
@@ -224,8 +224,8 @@ Outlet_Days$StartTime <- strptime(Outlet_Days$StartTime, format = c("%Y-%m-%d"))
 ### Egenkontrol ###
 
 #Inlet
-Data1 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Tilløb_2016.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
-Data2 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Tilløb_2017.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data1 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Tilløb_2016.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
+Data2 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Tilløb_2017.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
 
 Data <- rbind(Data1, Data2)
 
@@ -248,7 +248,7 @@ Data$COD_N_Ratio <- Data$COD/Data$N_tot
 Analyses_Inlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value")
 Analyses_Inlet$Origin <- "Inlet"
 
-Data <- read.delim(file = "data_raw/Process parameters/NØ_Egenkontrol_Tilløb_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Egenkontrol_Tilløb_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
 
 names(Data)[names(Data) == "Date"] <- "StartTime"
 Egenkontrol_Inlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value")
@@ -256,9 +256,9 @@ Egenkontrol_Inlet$Origin <- "Inlet"
 
 #Outlet
 
-Data1 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Afløb_2016.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data1 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Afløb_2016.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
 
-Data2 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Afløb_2017.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data2 <- read.delim(file = "data_raw/Process parameters/NØ_Analyses_Afløb_2017.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
 
 Data <- rbind(Data1, Data2)
 
@@ -281,7 +281,7 @@ Analyses_Outlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)
 
 Analyses_Outlet$Origin <- "Outlet"
 
-Data <- read.delim(file = "data_raw/Process parameters/NØ_Egenkontrol_Afløb_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Egenkontrol_Afløb_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
 
 names(Data)[names(Data) == "Date"] <- "StartTime"
 Egenkontrol_Outlet <- melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value")
@@ -309,7 +309,7 @@ Egenkontrol_Days$StartTime <- strptime(Egenkontrol_Days$StartTime, format = c("%
 
 ```{r Metadata SVI}
 ### SVI ###
-Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_2017.11.13_gd.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") #%>%
+Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_2017.11.13_gd.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") #%>%
 
 names(Data)[names(Data) == "Dato"] <- "StartTime"
 names(Data)[names(Data) == "Bundfældningsegenskaber.SV..30.min...ml.l"] <- "SV"
@@ -321,11 +321,11 @@ names(Data)[names(Data) == "Bundfældningsegenskaber.FSVI..ml.g"] <- "FSVI"
 
 SVI1 <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:(ncol(Data)-1)], variable.name = "Parameter", value.name = "Value")
 
-Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
 names(Data)[names(Data) == "Date"] <- "StartTime"
 SVI2 <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:(ncol(Data)-1)], variable.name = "Parameter", value.name = "Value")
 
-Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_FluxTests.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL")
+Data <- read.delim(file = "data_raw/Process parameters/NØ_SVI_FluxTests.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL")
 SVI3 <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:(ncol(Data))], variable.name = "Parameter", value.name = "Value")
 
 SVI <- rbind(SVI1, SVI2, SVI3)
@@ -349,7 +349,7 @@ SVI_Days$StartTime <- strptime(SVI_Days$StartTime, format = c("%Y-%m-%d"))
 
 ```{r Metadata Sludge}
 ### Sludge ###
-Data <- read.delim(file = "data_raw/Process parameters/NØ_Slamrapport_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-16", na.strings = "NULL") 
+Data <- read.delim(file = "data_raw/Process parameters/NØ_Slamrapport_Combined.txt", sep = "\t", header = T, dec = ".", encoding = "UTF-8", na.strings = "NULL") 
 names(Data)[names(Data) == "Date"] <- "StartTime"
 Sludge <-  melt(Data, id = c("StartTime"), measure.vars = colnames(Data)[2:ncol(Data)], variable.name = "Parameter", value.name = "Value") #3 gives the starting column number for column names to store as measure variables. This differs depending on the original dataformat.
 Sludge$Origin <- "Process"
@@ -505,7 +505,7 @@ subset$Unit = factor(subset$Unit, levels=c("COD effl (mg/L)",
 #plot 
 
 fig1 <- ggplot(subset, aes(x = Days, y = Value)) +
-  geom_point(size = 1.8, alpha = 0.5) +
+  geom_point(size = 1.2, alpha = 0.4) +
     geom_line(size = 1.0, alpha = 0.2) +
  
      theme(legend.position = "none",
@@ -513,27 +513,28 @@ fig1 <- ggplot(subset, aes(x = Days, y = Value)) +
            legend.key = element_rect(fill="transparent"),
            legend.text = element_text(size = 12, face = "bold", color = "black"),
            legend.title = element_blank(),
-           axis.text.y = element_text(size = 11, color = "black"), 
-           axis.text.x = element_text(size = 11, color = "black", hjust = 0.5, vjust = 0.5, angle = 90), 
-           axis.title.x  = element_text(size = 12, color = "black"),
-           axis.title.y  = element_text(size = 12, color = "black"),
+           axis.text.y = element_text(size = 7, color = "black"), 
+           axis.text.x = element_text(size = 7, color = "black", hjust = 1, vjust = 0.5, angle = 90), 
+           axis.title.x  = element_text(size = 10, color = "black"),
+           axis.title.y  = element_text(size = 10, color = "black"),
            
            panel.grid.major = element_line(size = 0.2, linetype = 'solid', colour = "gray"),
            panel.grid.minor = element_blank(),
            strip.background = element_blank(),
            panel.border = element_rect(colour = "black", fill = NA),
-           strip.text = element_text(size = 15, face = "bold", color = "black", hjust = 0)
+           strip.text = element_text(size = 12, face = "bold", color = "black", hjust = 0)
            ) +
   
   ylab("Value") +
   facet_wrap(~Unit, ncol = 3, 
              scales = "free_y", strip.position = "top") + 
-  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 0.6) +
   scale_x_continuous(breaks=seq(-500,200,100)) +
   expand_limits(y=c(0))+
    guides(col = guide_legend(nrow = 1)) 
 
-ggsave(plot = fig1, "Figures/Fig.1.jpg", width = 13, height = 7)
+#ggsave(plot = fig1, "Figures/Fig.1.jpg", width = 13, height = 7)
+ggsave(plot = fig1, "~/R/Immigration/Transplantation/paper_codes/Figures/Figure1 - Process parameters.pdf", width = 190, height = 130, units = "mm", dpi = 300)
 ```
 
 Clean Environment for next analysis
@@ -579,56 +580,51 @@ as_amp$metadata$Season[as_amp$metadata$Month == "June" | as_amp$metadata$Month =
 ###set order of colors for SampleGroup
 as_amp$metadata$SampleGroup <- factor(as_amp$metadata$SampleGroup, levels = c("before", "after-early", "after-intermediate", "after-late"))
 
-#plot
 nmds <- amp_ordinate(data = as_amp, 
              distmeasure = "bray",             
              type = "NMDS",
-             transform = "none",
-             sample_colorframe_label = "LabelNew",
-             sample_colorframe_label_size = 8,
-           sample_trajectory = "Days",
-             sample_shape_by = "Season",
-             sample_color_by = "SampleGroup",
-             sample_trajectory_group = "LabelNew",
-             sample_label_by = "Days_lable",
-             sample_point_size = 3,
-             sample_label_size = 5
-             ) +
-          theme(legend.position = "bottom",
-          legend.box="vertical", legend.margin=margin(),
-       
-           panel.background = element_blank(),
-           legend.text = element_text(size = 11, color = "black"),
-           legend.title = element_text(size = 13, face = "bold", color = "black"),
-           axis.text.y = element_text(size = 15, color = "black"), 
-           axis.text.x = element_text(angle = 0, size = 15, color = "black"), 
-           axis.title.y = element_text(size = 15, color = "black"),
-           axis.title.x = element_text(size = 15,  color = "black")
-           ) +  
-  
-  scale_colour_manual(values = c("before" = "black", 
-                                "after-early" = "blue",
-                     "after-intermediate" = "darkgreen",
-                     "after-late" = "red")) +
+             transform = "none")
 
-  annotate("text", 
-           x = 0.15,
-           y = 0.20, label = "Transplantation", size = 6, 
+nmds2 <-ggplot(nmds$data, aes(x = NMDS1, y = NMDS2)) +
+        geom_point(aes(color = SampleGroup,  shape=Season), size=1.5, alpha = 0.7) +
+        geom_path(aes(group = Plants, color = SampleGroup), alpha = 0.4) +
+ggrepel::geom_text_repel(aes(label = Days_lable), colour = "darkgrey", size = 2, segment.alpha = 0.3) +
+        theme_bw() +
+        theme(legend.position = "bottom",
+              legend.box="vertical", 
+              legend.margin=margin(t=-0.2, r=0, b=-0.2, l=0, unit="cm"),
+              legend.text = element_text(size = 7, color = "black"),
+              legend.title = element_text(size = 7, face = "bold", color = "black"),
+              axis.text = element_text(size = 7, color = "black"),
+              axis.title = element_text(size = 7, color = "black")
+           ) +
+  
+        scale_colour_manual(values = c("before" = "black", 
+                                  "after-early" = "#8351DA",
+                                  "after-intermediate" = "#2D949A",
+                                  "after-late" = "#D05801")) +
+        annotate("text", x = 0.45, y = 0.05, label = "R-AS", colour = "black", size = 4,  fontface =2) + 
+        annotate("text", x = -0.4, y = -0.05, label = "D-AS", colour = "black", size = 4, fontface =2) + 
+  
+        annotate("text", x = -0.4, y = -0.35, 
+             label = paste0(nmds$layers[[2]][["aes_params"]][["label"]]),size = 2.5) +
+        annotate("text", 
+           x = 0.25,
+           y = 0.38, label = "Transplantation", size = 3, 
            #angle = 28, 
            angle = 24, 
-           color = "black") +
-  geom_segment(aes(x = 0.28, y = 0.22, xend = 0.03, yend = 0.15),
-                  arrow = grid::arrow(length = unit(0.5, "cm")),
-                  colour = "black",
+           color = "darkred") +
+        guides(color=guide_legend(nrow=1, byrow=TRUE,
+                                 keywidth=0.05,
+                                 keyheight=0.05,
+                                 default.unit="inch")) +
+        geom_segment(aes(x = 0.5, y = 0.42, xend = 0.05, yend = 0.29),
+                  arrow = grid::arrow(length = unit(0.2, "cm")),
+                  colour = "darkred",
                lineend = "round",
                linejoin = "round",
-               size = 1)
-
-##modify size of Stress values on the plot:
-nmds[["layers"]][[2]][["aes_params"]][["size"]] <- 4.5
-
-#plot
-nmds
+               size = 0.3)
+nmds2
 ```
 
 ##Fig.2B-Cooman
@@ -637,42 +633,53 @@ nmds
 #import plot object from statistical analysis
 pCooman_data <- readRDS('data_generated/pCooman_data.rds')
 
+pCooman_data$points$ID <- as.character(pCooman_data$points$ID)
+pCooman_data$points$ID[pCooman_data$points$ID %in% "R-AS (after - later)"] <- "R-AS (after - late)" #renaming correctly
+pCooman_data$points$ID <- factor(pCooman_data$points$ID, levels = c("R-AS (before)", "D-AS (before)", "R-AS (after - early)", "R-AS (after - intermediate)", "R-AS (after - late)"))
+
 #Plot
 pCooman <- ggplot(pCooman_data$points, aes(f1, f2)) + 
-   geom_point(aes(colour = ID, shape = ID), size = 3) + 
-   geom_hline(yintercept = pCooman_data$lim1, linetype = "dashed", colour = "gray") + 
-   geom_vline(xintercept = pCooman_data$lim2, linetype = "dashed", colour = "gray") +
+   geom_point(aes(colour = ID, shape = ID), size = 1.5, alpha = 0.6) + 
+   geom_hline(yintercept = pCooman_data$lim1, linetype = "dashed", colour = "black", size = 0.2) + 
+   geom_vline(xintercept = pCooman_data$lim2, linetype = "dashed", colour = "black", size = 0.2) +
    labs(x = "Full distance to model R-AS(before)",
-        y = "Full distance to model D-AS(before") +
+        y = "Full distance to model D-AS(before)") +
    theme_bw()+
-   theme(legend.position = "bottom",
-         legend.text = element_text(size = 11, color = "black"),
-         legend.title = element_text(size = 13, face = "bold", color = "black"),
-           axis.text.y = element_text(size = 15, color = "black"), 
-           axis.text.x = element_text(angle = 0, size = 15, color = "black"), 
-           axis.title.y = element_text(size = 15, color = "black"),
-           axis.title.x = element_text(size = 15,  color = "black")) +
-   scale_colour_manual(name = "SampleGroup", 
-                     values = c("black", "black", "blue", "darkgreen","red")) +
-   scale_shape_manual(name = "SampleGroup",
-                      values= c(3, 17, 16, 16, 16)) +
-   guides(colour=guide_legend(nrow=2,byrow=TRUE))
+   theme(#legend.position = "bottom",
+         legend.position = c(.68, .80),
+          legend.box.background = element_rect(colour = 'black'),
+         legend.text = element_text(size = 8, color = "black"),
+         legend.title = element_text(size = 8, face = "bold", color = "black"),
+           axis.text.y = element_text(size = 8, color = "black"), 
+           axis.text.x = element_text(angle = 0, size = 8, color = "black"), 
+           axis.title.y = element_text(size = 8, color = "black"),
+           axis.title.x = element_text(size = 8,  color = "black")) +
+  guides(color=guide_legend(ncol=1, byrow=TRUE,
+                                 keywidth=0.1,
+                                 keyheight=0.1,
+                                 default.unit="inch")) +
+  scale_colour_manual(name = "SampleGroup", 
+                     values = c("black", "black", "#8351DA", "#2D949A","#D05801")) +
+    scale_shape_manual(name = "SampleGroup",
+                      values= c(17, 15, 19, 19, 19)) 
+
 
 pCooman
 ```
 
 ##combine figures
 ```{r}
-fig2 <- ggarrange(nmds,
+fig2 <- ggpubr::ggarrange(nmds2,
                pCooman,
                labels = c("A)", "B)"),
-                font.label = list(size = 22, color = "black", face = "bold", family = NULL),
+                font.label = list(size = 12, color = "black", face = "bold", family = NULL),
                 ncol = 2,
                 nrow = 1,
                 align = "hv")
 
 
-ggsave("Figures/Fig.2-NMDS and Cooman.jpg", plot = fig2, width = 16, height = 8)
+#ggsave("Figures/Fig.2-NMDS and Cooman.jpg", plot = fig2, width = 16, height = 8)
+ggsave("~/R/Immigration/Transplantation/paper_codes/Figures/Figure2 - NMDS and Cooman.pdf", plot = fig2, width = 190, height = 85, dpi = 300, units = "mm")
 ```
 
 Clean Environment for next analysis
@@ -758,14 +765,14 @@ data_before <- process_data(Venn_before2)
 plotVB <- ggplot() +
   geom_sf(aes(fill=count), data = venn_region(data_before)) +
   geom_sf(size = 0.5, lty = "solid", color = "black", data = venn_setedge(data_before), show.legend = F) +
-  geom_sf_text(aes(label = name), fontface = "bold", size = 6,  data = venn_setlabel(data_before)) +
-  geom_sf_label(aes(label=count), size = 5, color = "black", data = venn_region(data_before)) +
+  geom_sf_text(aes(label = name), fontface = "bold", size = 4,  data = venn_setlabel(data_before)) +
+  geom_sf_label(aes(label=count), size = 2.5, color = "black", data = venn_region(data_before)) +
   theme_void() +
   scale_fill_gradient(low="white",high = "red") +
   labs(title = "Before",
        subtitle = "-140 < days < 0") +
-   theme(plot.title = element_text(hjust=0.5, size = 20, face = "bold"),
-         plot.subtitle = element_text(hjust = 0.5, size = 15),
+   theme(plot.title = element_text(hjust=0.5, size = 12, face = "bold"),
+         plot.subtitle = element_text(hjust = 0.5, size = 10),
          legend.position = "none")
 
 ## After
@@ -775,14 +782,14 @@ data_after <- process_data(Venn_after2)
 plotVA <- ggplot() +
   geom_sf(aes(fill=count), data = venn_region(data_after)) +
   geom_sf(size = 0.5, lty = "solid", color = "black", data = venn_setedge(data_after), show.legend = F) +
-  geom_sf_text(aes(label = name), fontface = "bold", size = 6,  data = venn_setlabel(data_after)) +
-  geom_sf_label(aes(label=count), size = 5, color = "black", data = venn_region(data_after)) +
+  geom_sf_text(aes(label = name), fontface = "bold", size = 4,  data = venn_setlabel(data_after)) +
+  geom_sf_label(aes(label=count), size = 2.5, color = "black", data = venn_region(data_after)) +
   theme_void() +
   scale_fill_gradient(low="white",high = "red") +
   labs(title = "After",
        subtitle = "40 < days < 203") +
-   theme(plot.title = element_text(hjust=0.5, size = 20, face = "bold"),
-         plot.subtitle = element_text(hjust = 0.5, size = 15),
+   theme(plot.title = element_text(hjust=0.5, size = 12, face = "bold"),
+         plot.subtitle = element_text(hjust = 0.5, size = 10),
          legend.position = "none")
 
 #combine plots together
@@ -798,7 +805,7 @@ pVenn <- ggarrange(plotVB + rremove("legend"),
 annotate_figure(pVenn, 
                 fig.lab = "A)",
                 fig.lab.pos = "top.left",
-                fig.lab.size = 20,
+                fig.lab.size = 10,
                 fig.lab.face = "bold") 
 
 #ggsave("Figures/Fig.3A-Venn.jpg", plot = pVenn, height = 3, width = 13)
@@ -878,7 +885,7 @@ textmap1 <- amp_heatmap(hm_bef,
             color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
             plot_colorscale = "log10",
             plot_values = TRUE,
-            plot_values_size = 5,
+            plot_values_size = 2.5,
             textmap = T) 
 
 top30gen1 <- rownames(textmap1)
@@ -893,13 +900,13 @@ plottest1 <- amp_heatmap(hm_bef,
             color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
             plot_colorscale = "log10",
             plot_values = TRUE,
-            plot_values_size = 5) +
+            plot_values_size = 2.5) +
    theme(legend.position = "none",
-           legend.text = element_text(size = 18, face = "bold", color = "black"),
-           legend.title = element_text(size = 18, face = "bold", color = "black"),
-           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
-           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
-           strip.text = element_text(size = 18, face = "bold", color = "black")
+           legend.text = element_text(size = 10, face = "bold", color = "black"),
+           legend.title = element_text(size = 10, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 8,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 8, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 8, face = "bold", color = "black")
            )
 
 head(plottest1$data)
@@ -911,14 +918,15 @@ hm_bef1b <-  plottest1 +
     coord_flip() +
     labs(title = "Before",
            subtitle = "-140 < days < 0") +
-    theme(legend.position = "none",
-           legend.text = element_text(size = 18, face = "bold", color = "black"),
-           legend.title = element_text(size = 18, face = "bold", color = "black"),
-           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
-           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
-           strip.text = element_text(size = 18, face = "bold", color = "black"),
-          title = element_text(size = 18, face = "bold"),
-           plot.subtitle = element_text(size = 15, face = NULL)
+   theme(legend.position = "none",
+          # legend.text = element_text(size = 10, face = "bold", color = "black"),
+          # legend.title = element_text(size = 10, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 10,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 8, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 8, face = "bold", color = "black"),
+          plot.title = element_text(size = 12, face = "bold"),
+          plot.subtitle = element_text(size = 12),
+          axis.ticks = element_line(linewidth = 0.1)
            ) +
     scale_x_discrete(labels=c("Recipient" = "R-AS",
                             "Donor" = "D-AS"))
@@ -939,7 +947,7 @@ textmap2 <- amp_heatmap(hm_aft,
             color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
             plot_colorscale = "log10",
             plot_values = TRUE,
-            plot_values_size = 5,
+            plot_values_size = 2.5,
             textmap = T) 
 
 top30gen2 <- rownames(textmap2)
@@ -954,13 +962,13 @@ plottest2 <- amp_heatmap(hm_aft,
             color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
             plot_colorscale = "log10",
             plot_values = TRUE,
-            plot_values_size = 5) +
+            plot_values_size = 2.5) +
    theme(legend.position = "none",
-           legend.text = element_text(size = 18, face = "bold", color = "black"),
-           legend.title = element_text(size = 18, face = "bold", color = "black"),
-           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
-           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
-           strip.text = element_text(size = 18, face = "bold", color = "black")
+           legend.text = element_text(size = 10, face = "bold", color = "black"),
+           legend.title = element_text(size = 10, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 8,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 8, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 8, face = "bold", color = "black")
            )
 
 head(plottest2$data)
@@ -973,13 +981,14 @@ hm_aft1b <-  plottest2 +
     labs(title = "After",
            subtitle = "40 < days < 203") +
     theme(legend.position = "none",
-           legend.text = element_text(size = 18, face = "bold", color = "black"),
-           legend.title = element_text(size = 18, face = "bold", color = "black"),
-           axis.text.y = element_text(angle = 0, size = 18,color = "black", face = "bold"), 
-           axis.text.x = element_text(angle = 45, size = 18, color = "black", hjust = 1, vjust = 1), 
-           strip.text = element_text(size = 18, face = "bold", color = "black"),
-          title = element_text(size = 18, face = "bold"),
-            plot.subtitle = element_text(size = 15, face = NULL)
+          # legend.text = element_text(size = 10, face = "bold", color = "black"),
+          # legend.title = element_text(size = 10, face = "bold", color = "black"),
+           axis.text.y = element_text(angle = 0, size = 10,color = "black", face = "bold"), 
+           axis.text.x = element_text(angle = 45, size = 8, color = "black", hjust = 1, vjust = 1), 
+           strip.text = element_text(size = 8, face = "bold", color = "black"),
+          plot.title = element_text(size = 12, face = "bold"),
+          plot.subtitle = element_text(size = 12),
+           axis.ticks = element_line(linewidth = 0.1)
            ) +
   scale_x_discrete(labels=c("Recipient" = "R-AS",
                             "Donor" = "D-AS"))
@@ -1000,13 +1009,14 @@ pHM_hor <- ggarrange(NULL, hm_bef1b, hm_aft1b,
 fig3 <- ggarrange(pVenn,
                pHM_hor,
                labels = c("A)", "B)"),
-                 font.label = list(size = 25, color = "black", face = "bold", family = NULL),
+                 font.label = list(size = 15, color = "black", face = "bold", family = NULL),
                 ncol = 1,
                 nrow = 2,
                 align = "hv",
               heights = c(0.8, 1.5))
 
-ggsave("Figures/Fig.3-Venn and Horiz Heatmap.jpg", plot = fig3, width = 16, height = 13)
+#ggsave("Figures/Fig.3-Venn and Horiz Heatmap.jpg", plot = fig3, width = 16, height = 13)
+ggsave("~/R/Immigration/Transplantation/paper_codes/Figures/Figure3 - Venn and Horizontal Heatmap.pdf", plot = fig3, width = 190, height = 154, dpi = 300, units = "mm")
 ```
 
 Clean Environment for next analysis
@@ -1389,40 +1399,48 @@ rec_added2 <- merge(dm6_sub, rec2,
 
 ####Plot
 ```{r}
+#improving visualization of species name
+levels(rec_added2$Species_rename2)[levels(rec_added2$Species_rename2)%in%"Ca_Saccharimonas Ca_Saccharimonas_aalborgensis"] <- "Ca_Saccharimonas_aalborgensis"
+
 rec_added2$SpResTime <- factor(rec_added2$SpResTime, levels = c("Low", "Medium", "High"))
 
 #create a vector woth colors
 colpal <- c("#FECC5C","#FD8D3C","#F03B20","#BD0026",  "darkred", #reds
            "#BDD7E7",  "#6BAED6",  "#3182BD", "#08519C", "navy",  #blues
            "#BAE4B3", "#74C476", "#31A354", "#006D2C", "darkolivegreen" #greens
-                                   )
-
+                                            )
+#plot
 fig4 <- ggplot(rec_added2, aes(x = Days, y = rra_sp, color=Species_rename2)) + 
-        geom_point(size=3) +
-        geom_line(size=1)+
+        geom_point(size=0.5, alpha = 0.8) +
+        geom_line(size=0.1, alpha = 0.5)+
            theme(legend.position = "bottom",
                  panel.background = element_blank(),
-                 axis.line.x = element_line(color = "black"),
-                 axis.line.y = element_line(color = "black"),
-                 legend.text = element_text(size = 13, color = "black"),
+                 legend.key.size = unit(0.4, "cm"),
+                 axis.line = element_line(linewidth = 0.2),
+                 legend.text = element_text(size = 6, color = "black"),
                  legend.title = element_blank(),
-                 axis.text.y = element_text(size = 13, color = "black"), 
-                 axis.text.x = element_text(size = 13, angle = 0, vjust = 0.5, color = "black"), 
-                 axis.title.x = element_text(size = 15, color = "black"),
-                 axis.title.y = element_text(size = 15,color = "black"),
-                 strip.text = element_text(size = 18, face = "bold", color = "black"),
-                 plot.title = element_text(size=25),
-                 plot.subtitle = element_text(size = 20)
+                 axis.text.y = element_text(size = 5, color = "black"), 
+                 axis.text.x = element_text(size = 5, angle = 0, vjust = 0.5, color = "black"), 
+                 axis.title.x = element_text(size = 6, color = "black"),
+                 axis.title.y = element_text(size = 6,color = "black"),
+                 strip.text = element_text(size = 7, face = "bold", color = "black"),
+                 plot.title = element_text(size=10),
+                 plot.subtitle = element_text(size = 10),
+                 axis.ticks = element_line(linewidth = 0.1)
                  ) +
         facet_wrap(~SpResTime, scales = "free_y", ncol = 3)+
         xlab("Days") + 
-        geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+        geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 0.3) +
         ylab("Relative read abundance [%]") + 
         scale_x_continuous(breaks=seq(-140,220,40)) +
-        guides(color = guide_legend(ncol = 3)) +
+        guides(color = guide_legend(ncol = 3,
+                                    keywidth=0.1,
+                                    keyheight=0.1,
+                                    default.unit="inch")) +
       scale_colour_manual(values = rev(colpal), drop = F)
 
 #ggsave("Figures/Fig.4-Removal of added species.jpg", plot = fig4, width = 15, height = 5)
+ggsave(plot = fig4, filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Figure4 - Removal of added species.pdf", width = 140, height = 60, dpi = 1000, units = "mm")
 ```
 
 ####export Tab.S3
@@ -1651,7 +1669,7 @@ pt <- amp_heatmap(d_sub,
 ## Select only needed columns
 hm_guilds <- pt$data
 hm_guilds2 <- hm_guilds %>% 
-  select(-Group, -Sum, -Sample) %>% 
+  select(-.Group, -Sum, -Sample) %>% 
   rename(GenSp = Display) %>% 
   mutate_at(., 1, as.character) %>% 
   unique()
@@ -1695,7 +1713,7 @@ plot_hm <- amp_heatmap(d_sub,
             color_vector = c("#91bfdb","#ffffbf","#fc8d59"),
             plot_colorscale = "log10",
             plot_values = TRUE,
-            plot_values_size = 4,
+            plot_values_size = 1.5,
             round = 2,
            normalise = F)  
 
@@ -1732,16 +1750,22 @@ guildscol <- rev(c( #pao
 plot_hm2 <- plot_hm +
    labs(title = "Before") +
     theme(legend.position = "right",
-           plot.title = element_text(size = 25, color = "black", hjust = 0.5),
-           legend.text = element_text(size = 12, color = "black"),
-           legend.title = element_text(size = 12, color = "black"),
-           axis.text.y = element_text(size = 14, 
+          legend.key.size = unit(0.3, "cm"),
+       
+           plot.title = element_text(size = 8, color = "black", face = "bold", hjust = 0.5),
+           legend.text = element_text(size = 4, color = "black"),
+           legend.title = element_text(size = 4, color = "black"),
+           axis.text.y = element_text(size = 4, 
                                       colour = guildscol
                                       ), 
-           axis.text.x = element_text(angle = 45, size = 14, color = "white", vjust = 1.1, hjust = 1.1), 
-           strip.text = element_text(size = 18, face = "bold", color = "black")) 
+           axis.text.x = element_text(angle = 45, size = 5, color = "white", vjust = 1.1, hjust = 1.1), 
+           strip.text = element_text(size = 7, face = "bold", color = "black"),
+          axis.ticks.y = element_line(linewidth = 0.1),
+           axis.ticks.x = element_blank()
+    )
 
 #ggsave(plot = plot_hm2, filename = "Figures/Fig.5 - HM guilds.jpg", width = 9, height = 10, dpi = 600)#, scale = 2, limitsize = F)
+ggsave(plot = plot_hm2, filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Figure5 - HM guilds.pdf", width = 90, height = 100, dpi = 300, units = "mm")#, scale = 2, limitsize = F)
 ```
 
 Clean Environment for next analysis
@@ -1834,28 +1858,32 @@ PAO_un_add_sub$Species_rename2 <- factor(PAO_un_add_sub$Species_rename2, levels 
 
 #plot
 pao_top5u <- ggplot(PAO_un_add_sub, aes(x = Days, y = rra_sp, color=Plants)) + 
-  geom_point(size=3) +
-  geom_line(size=1)+
+ geom_point(size=0.5, alpha = 0.8) +
+  geom_line(size=0.1, alpha = 0.5)+
      theme(legend.position = "bottom",
+           legend.key.size = unit(0.4, "cm"),
            panel.background = element_blank(),
-           axis.line.x = element_line(color = "black"),
-           axis.line.y = element_line(color = "black"),
-           legend.text = element_text(size = 22, face = "bold", color = "black"),
+           axis.line = element_line(linewidth = 0.2),
+           # axis.line.x = element_line(color = "black"),
+           # axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 7, face = "bold", color = "black"),
            legend.title = element_blank(),
-           axis.text.y = element_text(size = 20, color = "black"), 
-           axis.text.x = element_text( size = 20, angle = 90, vjust = 0.5, color = "black"), 
-           axis.title.x = element_text(size = 22, color = "black"),
-           axis.title.y = element_text(size = 22, color = "black"),
-           strip.text = element_text(size = 25, face = "bold", color = "black"),
-            plot.title = element_text(size=30, face = "bold"),
-           plot.subtitle = element_text(size = 20)
+           axis.text.y = element_text(size = 5, color = "black"), 
+           axis.text.x = element_text( size = 5, angle = 90, vjust = 0.5, hjust = 0, color = "black"), 
+           axis.title.x = element_text(size = 5, color = "black"),
+           axis.title.y = element_text(size = 6, color = "black"),
+           strip.text = element_text(size = 6, face = "bold", color = "black"),
+            plot.title = element_text(size=7, face = "bold"),
+           plot.subtitle = element_text(size = 5),
+           axis.ticks = element_line(linewidth = 0.1)
            ) +
   facet_wrap(~ as.factor(Species_rename2), scales = "free_y", ncol = 5,  labeller = label_wrap_gen(width=10))+
    xlab("Days") + 
-  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 0.3) +
   ylab("Relative read abundance [%]") + 
   scale_x_continuous(breaks=seq(-140,220,40)) +
-  scale_color_discrete(labels = c("D-AS", "R-AS")) 
+  scale_color_manual(labels = c("D-AS", "R-AS"),
+                       values = c("#CEAB42", "#B560BF")) 
 
 ```
 
@@ -1882,30 +1910,35 @@ PAO_shared_sub$Species_rename2 <- factor(PAO_shared_sub$Species_rename2, levels 
 
 #plot
 pao_top5sh <- ggplot(PAO_shared_sub, aes(x = Days, y = rra_sp, color=Plants)) + 
-  geom_point(size=3) +
-  geom_line(size=1)+
+  geom_point(size=0.5, alpha = 0.8) +
+  geom_line(size=0.1, alpha = 0.5)+
      theme(legend.position = "bottom",
+           legend.key.size = unit(0.4, "cm"),
            panel.background = element_blank(),
-           axis.line.x = element_line(color = "black"),
-           axis.line.y = element_line(color = "black"),
-           legend.text = element_text(size = 22, face = "bold", color = "black"),
+           axis.line = element_line(linewidth = 0.2),
+           # axis.line.x = element_line(color = "black"),
+           # axis.line.y = element_line(color = "black"),
+           legend.text = element_text(size = 7, face = "bold", color = "black"),
            legend.title = element_blank(),
-           axis.text.y = element_text(size = 20, color = "black"), 
-           axis.text.x = element_text( size = 20, angle = 90, vjust = 0.5, color = "black"), 
-           axis.title.x = element_text(size = 22, color = "black"),
-           axis.title.y = element_text(size = 22, color = "black"),
-           strip.text = element_text(size = 25, face = "bold", color = "black"),
-            plot.title = element_text(size=30, face = "bold"),
-           plot.subtitle = element_text(size = 20)
+           axis.text.y = element_text(size = 5, color = "black"), 
+           axis.text.x = element_text( size = 5, angle = 90, vjust = 0.5, hjust = 1, color = "black"), 
+           axis.title.x = element_text(size = 6, color = "black"),
+           axis.title.y = element_text(size = 6, color = "black"),
+           strip.text = element_text(size = 6, face = "bold", color = "black"),
+            plot.title = element_text(size=7, face = "bold"),
+           plot.subtitle = element_text(size = 5),
+           axis.ticks = element_line(linewidth = 0.1)
            ) +
   facet_wrap(~ as.factor(Species_rename2), scales = "free_y", ncol = 5,  labeller = label_wrap_gen(width=10))+
    xlab("Days") + 
-  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 1) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black", size = 0.3) +
   ylab("Relative read abundance [%]") + 
   scale_x_continuous(breaks=seq(-140,220,40)) +
-  scale_color_discrete(labels = c("D-AS", "R-AS")) 
+  scale_color_manual(labels = c("D-AS", "R-AS"),
+                       values = c("#CEAB42", "#B560BF")) 
 
 ```
+
 
 ###Top5 plot combined shared and unique
 ```{r}
@@ -1916,13 +1949,13 @@ pao_top5u2 <- ggarrange(pao_top5u + rremove("xlab") + rremove("x.text") + rremov
 pao_top5u2 <- annotate_figure(pao_top5u2,
                 fig.lab = "A)", 
                 fig.lab.face = "bold",
-                fig.lab.size = 32,
+                fig.lab.size = 8,
                 fig.lab.pos = "top.left")
 
 pao_top5sh2 <- annotate_figure(pao_top5sh,
                 fig.lab = "B)", 
                 fig.lab.face = "bold",
-                fig.lab.size = 32,
+                fig.lab.size = 8,
                 fig.lab.pos = "top.left")
 
 
@@ -1932,10 +1965,11 @@ pao_top5both <- ggarrange(pao_top5u2,
                               ncol = 1,
                               nrow = 3,
                               align = "hv",
-                              heights = c(1, 0.1, 1.2)
+                              heights = c(1, 0.1, 1.6)
                            )
 
-ggsave(plot = pao_top5both, filename = "Figures/Fig.6_PAOs.jpeg", height = 12, width = 28)
+#ggsave(plot = pao_top5both, filename = "Figures/Fig.6_PAOs.jpeg", height = 12, width = 28)
+ggsave(plot = pao_top5both, filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Figure6 - PAOs.pdf", width = 190, height = 82, dpi = 300, units = "mm")
 
 ```
 
@@ -2125,9 +2159,10 @@ library(ggpubr)
 #A
 wide_A$Species_rename2 <- factor(wide_A$Species_rename2, levels = A2)
 
-plotA <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
+
+plotA <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew", size = 0.5, alpha = 0.7,
    add = "reg.line",  # Add regressin line
-   add.params = list(color = "black", fill = "lightgray"), 
+   add.params = list(fill = "lightgray", color = "black", size = 0.5, alpha = 0.1), 
    conf.int = TRUE,
    show.legend.text = NA) +
    #facet_grid(cols = vars(Plant)) +
@@ -2135,20 +2170,30 @@ plotA <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
   ylim(-3, 5) +
   labs(x = "abundance IWW", y = "abundance AS") +
   facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
-stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+stat_cor(method = "pearson", 
+         size = 1.8,
+         label.x = -2.5, label.y = 4) +
   theme_bw() +
   theme(legend.position = "none",
-        strip.text = element_text(size = 12, angle = 0),
-        plot.title = element_text(face = "bold", size = 18)) +
+        legend.key.size = unit(0.4, "cm"),
+        legend.text = element_text(size = 6, color = "black"),
+        legend.title = element_text(size = 8),
+        strip.text = element_text(size = 6.2, angle = 0),
+        plot.title = element_text(face = "bold", size = 10),
+        axis.title = element_text(size = 7),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.1),
+        ) +
     labs(title = "A)") 
 
 
 #B
 wide_B$Species_rename2 <- factor(wide_B$Species_rename2, levels = B2)
+levels(wide_B$Species_rename2)[levels(wide_B$Species_rename2) %in% "Sphingopyxis Sphingopyxis_bauzanensis"] <- "Sphingopyxis bauzanensis" #renaming for better visualization
 
-plotB <- ggscatter(wide_B, x = "zscore_iww", y = "zscore_as", color = "DaysNew",
+plotB <- ggscatter(wide_B, x = "zscore_iww", y = "zscore_as", color = "DaysNew", size = 0.5, alpha = 0.7,
    add = "reg.line",  # Add regressin line
-   add.params = list(color = "black", fill = "lightgray"), 
+  add.params = list(fill = "lightgray", color = "black", size = 0.5), 
    conf.int = TRUE,
    show.legend.text = NA) +
    #facet_grid(cols = vars(Plant)) +
@@ -2156,20 +2201,30 @@ plotB <- ggscatter(wide_B, x = "zscore_iww", y = "zscore_as", color = "DaysNew",
   ylim(-3, 5) +
   labs(x = "abundance IWW", y = "abundance AS") +
   facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
-stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+stat_cor(method = "pearson", 
+         size = 1.8,
+      label.x = -2.5, label.y = 4) +
   theme_bw() +
-  theme(legend.position = "none",
-        strip.text = element_text(size = 12, angle = 0),
-        plot.title = element_text(face = "bold", size = 18)) +
+   theme(legend.position = "none",
+        legend.key.size = unit(0.4, "cm"),
+      legend.text = element_text(size = 6, color = "black"),
+        legend.title = element_text(size = 8),
+        strip.text = element_text(size = 6.2, angle = 0),
+        plot.title = element_text(face = "bold", size = 10),
+        axis.title = element_text(size = 7),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.1),
+        ) +
    labs(title = "B)") 
 
 
 #C
 wide_C$Species_rename2 <- factor(wide_C$Species_rename2, levels = C2)
+levels(wide_C$Species_rename2)[levels(wide_C$Species_rename2)=="Ca_Microthrix Ca_Microthrix_parvicella"] <- "Ca_Microthrix parvicella" #renaming for better visualization
 
-plotC <- ggscatter(wide_C, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
+plotC <- ggscatter(wide_C, x = "zscore_iww", y = "zscore_as",color = "DaysNew", size = 0.5, alpha = 0.7,
    add = "reg.line",  # Add regressin line
-   add.params = list(color = "black", fill = "lightgray"), 
+   add.params = list(fill = "lightgray", color = "black", size = 0.5), 
    conf.int = TRUE,
    show.legend.text = NA) +
    #facet_grid(cols = vars(Plant)) +
@@ -2177,18 +2232,27 @@ plotC <- ggscatter(wide_C, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
   ylim(-3, 5) +
   labs(x = "abundance IWW", y = "abundance AS") +
  facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
-stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+stat_cor(method = "pearson", 
+         size = 1.8,
+        label.x = -2.5, label.y = 4) +
   theme_bw() +
-  theme(legend.position = "none",
-        strip.text = element_text(size = 12, angle = 0),
-        plot.title = element_text(face = "bold", size = 18)) +
+   theme(legend.position = "none",
+        legend.key.size = unit(0.4, "cm"),
+       legend.text = element_text(size = 6, color = "black"),
+        legend.title = element_text(size = 8),
+        strip.text = element_text(size = 6.2, angle = 0),
+        plot.title = element_text(face = "bold", size = 10),
+        axis.title = element_text(size = 7),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.1),
+        ) +
     labs(title = "C)") 
 
 #legend
 
-pleg <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
+pleg <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew", size = 0.5, alpha = 0.7,
    add = "reg.line",  # Add regressin line
-   add.params = list(color = "black", fill = "lightgray"), 
+   add.params = list(fill = "lightgray", color = "black", size = 0.5), 
    conf.int = TRUE,
    show.legend.text = NA) +
    #facet_grid(cols = vars(Plant)) +
@@ -2196,11 +2260,20 @@ pleg <- ggscatter(wide_A, x = "zscore_iww", y = "zscore_as",color = "DaysNew",
   ylim(-3, 5) +
   labs(x = "abundance IWW", y = "abundance AS") +
   facet_wrap( ~ as.factor(Species_rename2), ncol = 5, scales = "free", labeller = label_wrap_gen(width=3)) +
-stat_cor(method = "pearson", label.x = -2, label.y = 3) +
+stat_cor(method = "pearson", 
+         size = 1.5,
+      label.x = -2.5, label.y = 4) +
   theme_bw() +
-  theme(legend.position = "bottom",
-        strip.text = element_text(size = 12, angle = 0),
-        plot.title = element_text(face = "bold", size = 18)) +
+   theme(legend.position = "bottom",
+        legend.key.size = unit(0.4, "cm"),
+       legend.text = element_text(size = 6, color = "black"),
+        legend.title = element_text(size = 8),
+        strip.text = element_text(size = 6.2, angle = 0),
+        plot.title = element_text(face = "bold", size = 10),
+        axis.title = element_text(size = 7),
+        axis.text = element_text(size = 5),
+        axis.ticks = element_line(linewidth = 0.1),
+        ) +
     labs(title = "A)") +
    scale_color_continuous(name = "IWW/AS paired sample")
 legend <- get_legend(pleg)
@@ -2220,6 +2293,8 @@ p_zscore <-  ggarrange(plotA,
                        nrow = 4) 
 
 #ggsave(plot = p_zscore, "Figures/Fig.8-Zscore.jpeg", height = 10, width = 12)
+ggsave(plot = p_zscore, filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Figure8 - Zscore.pdf", width = 140, height = 130, dpi = 300, units = "mm")
+
 ```
 
 Clean Environment for next analysis
