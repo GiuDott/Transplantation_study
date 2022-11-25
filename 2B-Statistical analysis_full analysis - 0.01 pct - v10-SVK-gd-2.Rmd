@@ -19,7 +19,8 @@ library(kableExtra)
 load(file = "data_generated/fullData001pct2.RData")
 
 # define colors for the groups
-c3 <- mdaplot.getColors(3)
+#c3 <- mdaplot.getColors(3)
+c3 <- c("#8351DA", "#2D949A", "#D05801")
 col <- c(
    "R-AS (after - early)" = c3[1], "D-AS (after - early)" = c3[1],
    "R-AS (after - intermediate)" = c3[2], "D-AS (after - intermediate)" = c3[2],
@@ -439,10 +440,11 @@ plotTotalDistance(mr, X[s1])
 plotTotalDistances(mr, md, X[s2])
 ```
 
-##Fig.S1
+##Fig.S4
 Distance to Donor
 ```{r}
-#jpeg("Figures/Fig.S1-Dist to DAS.jpg", width = 800, height = 400)
+#png("~/R/Immigration/Transplantation/paper_codes/Figures/Fig.S4-Dist to DAS.png", res = 600, width = 10, height = 5, units = "in", pointsize = 10)
+
 par(mfrow = c(1, 2))
 plotResiduals(md, legend.position = "topleft", main = "Distances to D-AS (before)",
               res = rd, pch = pch[names(rd)], col = col[names(rd)])
@@ -451,10 +453,11 @@ plotTotalDistance(md, X[s1], col = col1)
 title(outer = T, adj = 0.5, main="B)", cex.main = 1.5, col="black", font=2, line=-2.5)
 ```
 
-##Fig.S2
+##Fig.S5
 Distance to Recipient
 ```{r}
-#jpeg("Figures/Fig.S2-Dist to RAS.jpg", width = 800, height = 400)
+#png("~/R/Immigration/Transplantation/paper_codes/Figures/Fig.S5-Dist to RAS.png", res = 600, width = 9, height = 5, units = "in", pointsize = 10)
+
 par(mfrow = c(1, 2))
 plotResiduals(mr, legend.position = "topleft", main = "Distances to R-AS (before)", 
               res = rr, pch = pch[names(rr)], col = col[names(rr)])
