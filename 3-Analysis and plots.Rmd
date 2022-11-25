@@ -1755,7 +1755,7 @@ plot_hm2 <- plot_hm +
            plot.title = element_text(size = 8, color = "black", face = "bold", hjust = 0.5),
            legend.text = element_text(size = 4, color = "black"),
            legend.title = element_text(size = 4, color = "black"),
-           axis.text.y = element_text(size = 4, 
+           axis.text.y = element_text(size = 5, 
                                       colour = guildscol
                                       ), 
            axis.text.x = element_text(angle = 45, size = 5, color = "white", vjust = 1.1, hjust = 1.1), 
@@ -1763,6 +1763,8 @@ plot_hm2 <- plot_hm +
           axis.ticks.y = element_line(linewidth = 0.1),
            axis.ticks.x = element_blank()
     )
+
+plot_hm2$layers[[1]][["aes_params"]][["size"]] <- 0.1 #adjusts tickness of tiles
 
 #ggsave(plot = plot_hm2, filename = "Figures/Fig.5 - HM guilds.jpg", width = 9, height = 10, dpi = 600)#, scale = 2, limitsize = F)
 ggsave(plot = plot_hm2, filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Figure5 - HM guilds.pdf", width = 90, height = 100, dpi = 300, units = "mm")#, scale = 2, limitsize = F)
@@ -1855,6 +1857,7 @@ top5gensp_PAOunique <- pao_unique %>%
 PAO_un_add_sub <- subset(pao_unique, Species_rename2 %in% top5gensp_PAOunique)
 
 PAO_un_add_sub$Species_rename2 <- factor(PAO_un_add_sub$Species_rename2, levels = top5gensp_PAOunique)
+levels(PAO_un_add_sub$Species_rename2)[levels(PAO_un_add_sub$Species_rename2)%in%"Tetrasphaera Tetrasphaera_australiensis"] <- "Tetrasphaera australiensis" #renaming to improve visualization
 
 #plot
 pao_top5u <- ggplot(PAO_un_add_sub, aes(x = Days, y = rra_sp, color=Plants)) + 
@@ -1907,6 +1910,7 @@ top5gensp_PAOshared <- pao_shared %>%
 PAO_shared_sub <- subset(pao_shared, Species_rename2 %in% top5gensp_PAOshared)
 
 PAO_shared_sub$Species_rename2 <- factor(PAO_shared_sub$Species_rename2, levels = top5gensp_PAOshared)
+levels(PAO_shared_sub$Species_rename2)[levels(PAO_shared_sub$Species_rename2)%in%"Tetrasphaera Tetrasphaera_elongata"] <- "Tetrasphaera elongata" #renaming to improve visualization
 
 #plot
 pao_top5sh <- ggplot(PAO_shared_sub, aes(x = Days, y = rra_sp, color=Plants)) + 
@@ -1914,18 +1918,15 @@ pao_top5sh <- ggplot(PAO_shared_sub, aes(x = Days, y = rra_sp, color=Plants)) +
   geom_line(size=0.1, alpha = 0.5)+
      theme(legend.position = "bottom",
            legend.key.size = unit(0.4, "cm"),
-           panel.background = element_blank(),
-           axis.line = element_line(linewidth = 0.2),
-           # axis.line.x = element_line(color = "black"),
-           # axis.line.y = element_line(color = "black"),
            legend.text = element_text(size = 7, face = "bold", color = "black"),
            legend.title = element_blank(),
+           panel.background = element_blank(),
+           axis.line = element_line(linewidth = 0.2),
            axis.text.y = element_text(size = 5, color = "black"), 
-           axis.text.x = element_text( size = 5, angle = 90, vjust = 0.5, hjust = 1, color = "black"), 
-           axis.title.x = element_text(size = 6, color = "black"),
+           axis.text.x = element_text( size = 5, angle = 90, vjust = 0.5, hjust = 1, color = "black"),            axis.title.x = element_text(size = 6, color = "black"),
            axis.title.y = element_text(size = 6, color = "black"),
            strip.text = element_text(size = 6, face = "bold", color = "black"),
-            plot.title = element_text(size=7, face = "bold"),
+           plot.title = element_text(size=7, face = "bold"),
            plot.subtitle = element_text(size = 5),
            axis.ticks = element_line(linewidth = 0.1)
            ) +
@@ -1935,7 +1936,7 @@ pao_top5sh <- ggplot(PAO_shared_sub, aes(x = Days, y = rra_sp, color=Plants)) +
   ylab("Relative read abundance [%]") + 
   scale_x_continuous(breaks=seq(-140,220,40)) +
   scale_color_manual(labels = c("D-AS", "R-AS"),
-                       values = c("#CEAB42", "#B560BF")) 
+                       values = c("#CEAB42", "#B560BF"))  
 
 ```
 
@@ -2183,7 +2184,7 @@ stat_cor(method = "pearson",
         axis.title = element_text(size = 7),
         axis.text = element_text(size = 5),
         axis.ticks = element_line(linewidth = 0.1),
-        ) +
+        ) #+
     labs(title = "A)") 
 
 
@@ -2214,7 +2215,7 @@ stat_cor(method = "pearson",
         axis.title = element_text(size = 7),
         axis.text = element_text(size = 5),
         axis.ticks = element_line(linewidth = 0.1),
-        ) +
+        ) #+
    labs(title = "B)") 
 
 
@@ -2245,7 +2246,7 @@ stat_cor(method = "pearson",
         axis.title = element_text(size = 7),
         axis.text = element_text(size = 5),
         axis.ticks = element_line(linewidth = 0.1),
-        ) +
+        ) #+
     labs(title = "C)") 
 
 #legend
@@ -2274,7 +2275,7 @@ stat_cor(method = "pearson",
         axis.text = element_text(size = 5),
         axis.ticks = element_line(linewidth = 0.1),
         ) +
-    labs(title = "A)") +
+    #labs(title = "A)") +
    scale_color_continuous(name = "IWW/AS paired sample")
 legend <- get_legend(pleg)
 as_ggplot(legend)
@@ -2290,10 +2291,12 @@ p_zscore <-  ggarrange(plotA,
                       heights = c(1,1,1, 0.4),
                        align = "hv",
                        ncol = 1,
-                       nrow = 4) 
+                       nrow = 4,
+                       labels = c("A)", "B)", "C)"),
+                      font.label = list(size = 10, color = "black", face = "bold", family = NULL)) 
 
 #ggsave(plot = p_zscore, "Figures/Fig.8-Zscore.jpeg", height = 10, width = 12)
-ggsave(plot = p_zscore, filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Figure8 - Zscore.pdf", width = 140, height = 130, dpi = 300, units = "mm")
+ggsave(plot = p_zscore, filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Figure8 - Zscore.pdf", width = 140, height = 110, dpi = 300, units = "mm")
 
 ```
 
