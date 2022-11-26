@@ -295,9 +295,6 @@ plottest$data[,2] <- factor(plottest$data[,2], levels = rev(top50spDonor))
 
 
 #sorted plot
-library(extrafont)
-font_import() #Import all fonts
-loadfonts(device = "win")
 
 plottest +
   labs(title = "Before") +
@@ -305,10 +302,11 @@ plottest +
         axis.text.x = element_text(size = 12, colour = "white", vjust = 0.5, hjust = 0.5, angle = 0), 
         legend.position = "right",
         strip.text = element_text(size = 13, face = "bold", color = "black"),
-         plot.title = element_text(size = 15, color = "black", hjust = 0.5),
-        text=element_text(family="sans")) 
+         plot.title = element_text(size = 15, color = "black", hjust = 0.5)
+             ) 
 
 #ggsave(filename = "Figures/Fig.S7-HM_IWW before_sorted by donor_top50species.pdf", width = 10, height = 8, dpi = 600)
+ggsave(filename = "~/R/Immigration/Transplantation/paper_codes/Figures/Fig.S7-HM_IWW before_sorted by donor_top50species.pdf", width = 10, height = 8, dpi = 600)
 ```
 
 #Fig.S8-Sludge retention time of recipient plant.
