@@ -16,7 +16,7 @@ library(ggplot2)
 library(mdatools)
 library(readxl)
 library(kableExtra)
-load(file = "data_generated/fullData001pct2.RData")
+#load(file = "data_generated/fullData001pct2.RData")
 
 # define colors for the groups
 #c3 <- mdaplot.getColors(3)
@@ -31,10 +31,10 @@ col <- c(
 
 # define markers for the groups
 pch <- c(
-   "R-AS (after - early)" = 1, "D-AS (after - early)" = 1,
-   "R-AS (after - intermediate)" = 1, "D-AS (after - intermediate)" = 1,
-   "R-AS (after - later)" = 1, "D-AS (after - later)" = 1,
-   "R-AS (before)" = 3, "D-AS (before)" = 2
+   "R-AS (after - early)" = 19, "D-AS (after - early)" = 19,
+   "R-AS (after - intermediate)" = 19, "D-AS (after - intermediate)" = 19,
+   "R-AS (after - later)" = 19, "D-AS (after - later)" = 19,
+   "R-AS (before)" = 17, "D-AS (before)" = 15
 )
 
 #' Computes and returns PCA model with proper number of components
